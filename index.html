@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AKS Field Manual — Standing Up a New Azure Environment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+
+  /* ---------- tokens ---------- */
+  :root{
+    --bg:#0a1220;
+    --surface:#111b30;
+    --surface-2:#182640;
+    --line:#28395a;
+    --ink:#e7edf7;
+    --ink-dim:#93a5c4;
+    --ink-faint:#5d6f90;
+    --accent:#4fb3ff;
+    --accent-soft:rgba(79,179,255,0.13);
+    --accent-ink:#04101d;
+    --accent-2:#7be0c4;
+    --good:#5fd98a;
+    --warn:#f5b942;
+    --crit:#f2685c;
+    --shadow: 0 20px 50px -25px rgba(0,0,0,0.6);
+    --font-display: ui-monospace, "Cascadia Code", "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --font-body: "Iowan Old Style","Palatino Linotype","Book Antiqua", Georgia, "Noto Serif", serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f3f5fa;
+      --surface:#ffffff;
+      --surface-2:#eef1f8;
+      --line:#d7deec;
+      --ink:#142033;
+      --ink-dim:#5b6a85;
+      --ink-faint:#8996b1;
+      --accent:#1c6fd1;
+      --accent-soft:rgba(28,111,209,0.09);
+      --accent-ink:#ffffff;
+      --accent-2:#178064;
+      --good:#1f9c4a;
+      --warn:#a5710a;
+      --crit:#c1352a;
+      --shadow: 0 20px 40px -28px rgba(20,32,51,0.25);
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0a1220; --surface:#111b30; --surface-2:#182640; --line:#28395a;
+    --ink:#e7edf7; --ink-dim:#93a5c4; --ink-faint:#5d6f90;
+    --accent:#4fb3ff; --accent-soft:rgba(79,179,255,0.13); --accent-ink:#04101d; --accent-2:#7be0c4;
+    --good:#5fd98a; --warn:#f5b942; --crit:#f2685c;
+    --shadow: 0 20px 50px -25px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f5fa; --surface:#ffffff; --surface-2:#eef1f8; --line:#d7deec;
+    --ink:#142033; --ink-dim:#5b6a85; --ink-faint:#8996b1;
+    --accent:#1c6fd1; --accent-soft:rgba(28,111,209,0.09); --accent-ink:#ffffff; --accent-2:#178064;
+    --good:#1f9c4a; --warn:#a5710a; --crit:#c1352a;
+    --shadow: 0 20px 40px -28px rgba(20,32,51,0.25);
+    color-scheme: light;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 85% -10%, var(--accent-soft), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16.5px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+  a{ color:var(--accent); }
+  h1,h2,h3{ text-wrap:balance; font-weight:600; }
+  code, .mono{ font-family:var(--font-display); }
+  .eyebrow{
+    font-family:var(--font-display);
+    font-size:0.72rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    gap:0.6em;
+  }
+  .eyebrow .n{
+    color:var(--ink-faint);
+  }
+
+  /* ---------- shell layout ---------- */
+  .shell{
+    display:grid;
+    grid-template-columns: 250px minmax(0,1fr);
+    max-width:1360px;
+    margin:0 auto;
+    align-items:start;
+  }
+  @media (max-width: 980px){
+    .shell{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- sidebar ---------- */
+  .rail{
+    position:sticky; top:0;
+    height:100vh;
+    overflow-y:auto;
+    padding:1.75rem 1.1rem 2rem;
+    border-right:1px solid var(--line);
+    display:flex; flex-direction:column; gap:1.4rem;
+  }
+  @media (max-width: 980px){
+    .rail{ position:relative; height:auto; border-right:none; border-bottom:1px solid var(--line); }
+  }
+  .brand{ display:flex; flex-direction:column; gap:0.3rem; padding:0 0.2rem; }
+  .brand .mark{
+    font-family:var(--font-display);
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .brand h1{
+    font-size:1.05rem;
+    margin:0;
+    font-family:var(--font-display);
+    letter-spacing:-0.01em;
+  }
+  .progress-wrap{
+    padding:0.75rem 0.8rem;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:var(--surface);
+    display:flex; flex-direction:column; gap:0.5rem;
+  }
+  .progress-label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:var(--font-display); font-size:0.68rem; letter-spacing:0.06em;
+    color:var(--ink-dim); text-transform:uppercase;
+  }
+  .progress-label b{ color:var(--accent); font-size:0.8rem; }
+  .progress-track{ height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line); }
+  .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width .35s ease; }
+
+  nav.stages{ display:flex; flex-direction:column; gap:0.15rem; }
+  nav.stages a{
+    display:flex; align-items:center; gap:0.6rem;
+    text-decoration:none; color:var(--ink-dim);
+    font-size:0.86rem;
+    padding:0.45rem 0.5rem;
+    border-radius:8px;
+    border-left:2px solid transparent;
+  }
+  nav.stages a:hover{ background:var(--surface); color:var(--ink); }
+  nav.stages a.done{ color:var(--ink); }
+  nav.stages a .idx{
+    font-family:var(--font-display); font-size:0.72rem; color:var(--ink-faint);
+    width:1.4em; flex:none;
+  }
+  nav.stages a.done .idx{ color:var(--good); }
+  nav.stages a .chk{
+    width:14px; height:14px; border-radius:4px; border:1px solid var(--line);
+    flex:none; display:inline-flex; align-items:center; justify-content:center;
+    font-size:10px; color:var(--good);
+  }
+  nav.stages a.done .chk{ border-color:var(--good); background:var(--accent-soft); }
+  nav.stages .divider{ height:1px; background:var(--line); margin:0.6rem 0.2rem; }
+
+  .rail-foot{
+    margin-top:auto; padding-top:1rem; border-top:1px solid var(--line);
+    font-size:0.78rem; color:var(--ink-faint); line-height:1.5;
+  }
+
+  /* ---------- main content ---------- */
+  main{ padding:2.75rem clamp(1.2rem, 4vw, 3.5rem) 6rem; min-width:0; }
+
+  .hero{ max-width:62ch; margin-bottom:3.2rem; }
+  .hero .eyebrow{ margin-bottom:0.9rem; }
+  .hero h1{
+    font-size:clamp(1.9rem, 3.4vw, 2.6rem);
+    line-height:1.15;
+    margin:0 0 0.9rem;
+  }
+  .hero h1 em{ font-style:normal; color:var(--accent); }
+  .hero p{ color:var(--ink-dim); font-size:1.05rem; margin:0 0 0.9rem; }
+  .hero .byline{
+    font-family:var(--font-display); font-size:0.78rem; color:var(--ink-faint);
+    letter-spacing:0.02em;
+  }
+
+  section.stage{
+    scroll-margin-top:1.5rem;
+    padding:2.6rem 0;
+    border-top:1px solid var(--line);
+    display:grid;
+    grid-template-columns: minmax(0,1.05fr) minmax(0,0.95fr);
+    gap:2.4rem;
+  }
+  section.stage:first-of-type{ border-top:1px solid var(--line); }
+  @media (max-width: 860px){
+    section.stage{ grid-template-columns:1fr; }
+  }
+
+  .stage-head{ display:flex; align-items:flex-start; gap:0.9rem; margin-bottom:0.9rem; }
+  .stage-check{
+    flex:none; width:26px; height:26px; margin-top:0.15rem;
+    border:1px solid var(--line); border-radius:7px;
+    background:var(--surface); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--good); font-size:14px;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .stage-check[aria-pressed="true"]{ background:var(--accent-soft); border-color:var(--good); }
+  .stage-check svg{ width:14px; height:14px; opacity:0; transition:opacity .15s ease; }
+  .stage-check[aria-pressed="true"] svg{ opacity:1; }
+
+  .stage-copy h2{ font-size:1.5rem; margin:0 0 0.15rem; }
+  .stage-copy .sub{ color:var(--ink-faint); font-size:0.88rem; font-family:var(--font-display); }
+
+  .stage-body p{ margin:0 0 0.85rem; color:var(--ink); }
+  .stage-body p.lede{ font-size:1.02rem; }
+  .stage-body ul{ margin:0 0 0.9rem; padding-left:1.15rem; }
+  .stage-body li{ margin-bottom:0.4rem; }
+  .stage-body strong{ color:var(--ink); }
+
+  .note{
+    display:flex; gap:0.7rem;
+    border:1px solid var(--line);
+    border-left:3px solid var(--warn);
+    background:var(--surface);
+    border-radius:0 8px 8px 0;
+    padding:0.8rem 1rem;
+    margin:1rem 0;
+    font-size:0.92rem;
+  }
+  .note .tag{
+    font-family:var(--font-display); font-size:0.66rem; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--warn); flex:none; padding-top:0.15rem;
+  }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:1rem; }
+  .chip{
+    font-family:var(--font-display); font-size:0.7rem;
+    border:1px solid var(--line); color:var(--ink-dim);
+    padding:0.25rem 0.55rem; border-radius:99px; background:var(--surface);
+  }
+
+  /* code column */
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    align-self:start;
+    position:sticky;
+    top:1.5rem;
+  }
+  @media (max-width: 860px){ .panel{ position:static; } }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0.6rem 0.9rem;
+    border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+  }
+  .panel-head .dots{ display:flex; gap:5px; }
+  .panel-head .dots span{ width:8px; height:8px; border-radius:50%; background:var(--line); }
+  .panel-head .fname{ font-family:var(--font-display); font-size:0.72rem; color:var(--ink-dim); }
+  pre{
+    margin:0; padding:1rem 1.1rem;
+    overflow-x:auto;
+    font-family:var(--font-display);
+    font-size:0.82rem;
+    line-height:1.65;
+    color:var(--ink);
+  }
+  pre .c1{ color:var(--ink-faint); }
+  pre .k{ color:var(--accent); }
+  pre .s{ color:var(--accent-2); }
+  .panel .diagram{ padding:1rem 1.1rem 1.2rem; border-top:1px solid var(--line); }
+  .diagram-title{ font-family:var(--font-display); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:0.7rem; }
+
+  /* mini schematic boxes reused across sections */
+  .box-row{ display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; }
+  .box{
+    border:1px dashed var(--line); border-radius:8px;
+    padding:0.5rem 0.65rem; font-size:0.76rem; font-family:var(--font-display);
+    color:var(--ink-dim); background:var(--bg);
+  }
+  .box.solid{ border-style:solid; color:var(--ink); }
+  .box.accent{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .box small{ display:block; font-family:var(--font-body); font-size:0.7rem; color:var(--ink-faint); margin-top:0.15rem; }
+  .arrow{ color:var(--ink-faint); font-size:0.9rem; }
+  .nest{ border:1px dashed var(--line); border-radius:10px; padding:0.7rem; }
+  .nest > .diagram-title{ margin-bottom:0.5rem; }
+
+  /* ---------- big picture ---------- */
+  .bigpicture{ padding:2.6rem 0; border-top:1px solid var(--line); }
+  .bp-frame{
+    border:1px dashed var(--line); border-radius:14px; padding:1.4rem;
+  }
+  .bp-frame > .diagram-title{ margin-bottom:1rem; }
+  .bp-grid{ display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap:1rem; }
+  @media (max-width: 860px){ .bp-grid{ grid-template-columns:1fr; } }
+  .bp-card{
+    border:1px solid var(--line); border-radius:10px; background:var(--surface);
+    padding:0.9rem;
+  }
+  .bp-card h4{
+    margin:0 0 0.6rem; font-family:var(--font-display); font-size:0.78rem;
+    color:var(--accent); text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .bp-card .pool{ border:1px solid var(--line); border-radius:8px; padding:0.55rem; margin-bottom:0.5rem; background:var(--surface-2); }
+  .bp-card .pool .lbl{ font-family:var(--font-display); font-size:0.68rem; color:var(--ink-dim); margin-bottom:0.35rem; }
+  .flow{
+    margin-top:1.2rem; padding-top:1.1rem; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;
+  }
+  .flow .box{ font-size:0.72rem; }
+
+  /* ---------- cheat sheet ---------- */
+  .cheat{ padding:2.6rem 0; border-top:1px solid var(--line); }
+  .cheat table{ width:100%; border-collapse:collapse; font-size:0.86rem; }
+  .cheat-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; }
+  .cheat th, .cheat td{ text-align:left; padding:0.6rem 0.8rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  .cheat th{ font-family:var(--font-display); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); }
+  .cheat td code{ background:var(--surface-2); padding:0.1rem 0.35rem; border-radius:5px; font-size:0.78rem; }
+  .cheat tr:last-child td{ border-bottom:none; }
+
+  footer.page{
+    padding:2.5rem clamp(1.2rem,4vw,3.5rem) 3rem; border-top:1px solid var(--line);
+    color:var(--ink-faint); font-size:0.82rem; max-width:1360px; margin:0 auto;
+  }
+
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .progress-fill{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <span class="mark">field manual</span>
+      <h1>AKS · Build Order</h1>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>learned</span><b id="progress-pct">0%</b></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <nav class="stages" id="stage-nav">
+      <a href="#foundations"><span class="idx">00</span><span class="chk">✓</span>Resource group &amp; VNet</a>
+      <a href="#cluster"><span class="idx">01</span><span class="chk">✓</span>Cluster &amp; nodes</a>
+      <a href="#namespaces"><span class="idx">02</span><span class="chk">✓</span>Namespaces</a>
+      <a href="#pods"><span class="idx">03</span><span class="chk">✓</span>Pods &amp; workloads</a>
+      <a href="#identity"><span class="idx">04</span><span class="chk">✓</span>Managed identity</a>
+      <a href="#storage"><span class="idx">05</span><span class="chk">✓</span>Azure storage</a>
+      <a href="#loadbalancing"><span class="idx">06</span><span class="chk">✓</span>Services &amp; load balancing</a>
+      <a href="#ingress"><span class="idx">07</span><span class="chk">✓</span>Ingress</a>
+      <a href="#gateway"><span class="idx">08</span><span class="chk">✓</span>Gateway API</a>
+      <div class="divider"></div>
+      <a href="#bigpicture" style="opacity:.75">↳ full picture</a>
+      <a href="#cheatsheet" style="opacity:.75">↳ cheat sheet</a>
+    </nav>
+
+    <div class="rail-foot">
+      Progress is saved in this browser only — check off a stage once you can explain it back without notes.
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div class="eyebrow">for pietersaay · junior dev → aks</div>
+      <h1>Everything you need to stand up <em>one application</em> on AKS, in the order you'll actually build it.</h1>
+      <p>
+        This isn't the whole of Kubernetes — it's the slice a senior engineer would walk you through
+        on day one of shipping a real app to Azure Kubernetes Service: the network it lives in, the
+        machines it runs on, how it gets an identity, where its data goes, and the three different ways
+        traffic can reach it. Read top to bottom the first time; use the rail to jump back in later.
+      </p>
+      <div class="byline">written for a junior programmer · reviewed the way a senior devops engineer would review a PR</div>
+    </div>
+
+    <!-- 00 FOUNDATIONS -->
+    <section class="stage" id="foundations" data-stage="0">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 00</span> foundation</div>
+            <h2>Resource group &amp; virtual network</h2>
+            <div class="sub">before any Kubernetes exists</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Every Azure resource you create — the cluster, the storage account, the public IP — has to live inside a <strong>resource group</strong>: a folder for billing, permissions, and cleanup. Delete the group, delete the whole environment.</p>
+          <p>AKS nodes are Azure VMs, and VMs need addresses, so the cluster needs a <strong>virtual network (VNet)</strong> and a subnet to launch into. The networking mode you choose here — <strong>kubenet</strong> (nodes get real IPs, pods get an overlay) or <strong>Azure CNI</strong> (pods get real, routable VNet IPs) — is a decision you make once. Changing it later usually means rebuilding the cluster.</p>
+          <ul>
+            <li><strong>Resource group</strong> — the container everything below lives in.</li>
+            <li><strong>VNet + subnet</strong> — the private network the cluster's nodes attach to.</li>
+            <li><strong>CNI choice</strong> — determines how many IP addresses your subnet needs to reserve.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>With Azure CNI, every pod eats a real IP from the subnet, not just every node. Undersize the subnet and you'll hit a wall at 40% cluster capacity, not 100%. Size for pods, not nodes.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="c1"># resource group — everything else lives here</span>
+<span class="k">az</span> group create \
+  --name rg-myapp-prod \
+  --location westeurope
+
+<span class="c1"># network the nodes will launch into</span>
+<span class="k">az</span> network vnet create \
+  --resource-group rg-myapp-prod \
+  --name vnet-myapp \
+  --address-prefix 10.0.0.0/8 \
+  --subnet-name snet-aks \
+  --subnet-prefix 10.240.0.0/16</pre>
+        <div class="diagram">
+          <div class="diagram-title">what nests inside what</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Resource Group</div>
+              <span class="arrow">→</span>
+              <div class="box solid">Virtual Network</div>
+              <span class="arrow">→</span>
+              <div class="box solid">Subnet<small>where node NICs attach</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 01 CLUSTER & NODES -->
+    <section class="stage" id="cluster" data-stage="1">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 01</span> compute</div>
+            <h2>The cluster &amp; its nodes</h2>
+            <div class="sub">control plane + node pools</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">An AKS cluster is really two separate things billed differently. The <strong>control plane</strong> — API server, scheduler, etcd — is managed and (mostly) free; you never see or patch it. The <strong>node pools</strong> are Azure VM scale sets you pay for, patch, and size.</p>
+          <p>A <strong>node</strong> is one VM running <code>kubelet</code> (talks to the control plane), <code>kube-proxy</code> (networking rules), and a container runtime (<code>containerd</code>). Every AKS cluster needs a <strong>system node pool</strong> for cluster-critical pods — CoreDNS, metrics-server — and should get at least one <strong>user node pool</strong> for your actual application.</p>
+          <ul>
+            <li><strong>System pool</strong> — keeps the cluster alive. Keep app workloads off it.</li>
+            <li><strong>User pool(s)</strong> — where your Deployments actually schedule; scale/size per workload.</li>
+            <li><strong>Cluster autoscaler</strong> — adds/removes nodes based on unschedulable pods.</li>
+            <li><strong>Availability zones</strong> — spread nodes across zones so one datacenter failure isn't an outage.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A noisy pod on the system pool can starve CoreDNS of CPU and take down DNS resolution for the entire cluster. Taint the system pool (<code>CriticalAddonsOnly</code>) and give your app its own pool — it's cheap insurance.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">az</span> aks create \
+  --resource-group rg-myapp-prod \
+  --name aks-myapp-prod \
+  --vnet-subnet-id &lt;subnet-id&gt; \
+  --network-plugin azure \
+  --node-count 3 \
+  --node-vm-size Standard_D4s_v5 \
+  --zones 1 2 3 \
+  --enable-cluster-autoscaler \
+  --min-count 3 --max-count 6
+
+<span class="c1"># add a dedicated pool for the app</span>
+<span class="k">az</span> aks nodepool add \
+  --cluster-name aks-myapp-prod \
+  --resource-group rg-myapp-prod \
+  --name userpool \
+  --node-vm-size Standard_D4s_v5 \
+  --mode User</pre>
+        <div class="diagram">
+          <div class="diagram-title">cluster anatomy</div>
+          <div class="nest">
+            <div class="box-row" style="margin-bottom:.5rem">
+              <div class="box accent">Control plane <small>managed by Azure</small></div>
+            </div>
+            <div class="box-row">
+              <div class="box solid">System pool<small>coredns · metrics-server</small></div>
+              <div class="box solid">User pool<small>your app's pods</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 NAMESPACES -->
+    <section class="stage" id="namespaces" data-stage="2">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 02</span> isolation</div>
+            <h2>Namespaces</h2>
+            <div class="sub">a logical wall, not a security boundary</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A namespace partitions one cluster into separate zones for names, quotas, and permissions. It does <em>not</em> isolate at the kernel or network level by default — a pod in <code>dev</code> can still reach a pod in <code>prod</code> unless a <code>NetworkPolicy</code> says otherwise.</p>
+          <p>Three ship built in: <code>default</code>, <code>kube-system</code> (cluster internals — leave it alone), and <code>kube-public</code>. Everything you create should get its own.</p>
+          <ul>
+            <li>One namespace per <strong>environment</strong> (or per team, or per app) — pick a convention and stick to it.</li>
+            <li><strong>ResourceQuota</strong> caps total CPU/memory a namespace can consume.</li>
+            <li><strong>RoleBinding</strong> scopes who can do what, per namespace.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A namespace stops your team from starving another team's CPU quota. It does nothing against a container escape or a misconfigured Service reaching across namespaces — that's <code>NetworkPolicy</code> and pod security, a different layer entirely.</div>
+          <div class="chips"><span class="chip">kubectl create namespace</span><span class="chip">ResourceQuota</span><span class="chip">LimitRange</span><span class="chip">RoleBinding</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">namespace.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Namespace
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-prod
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ResourceQuota
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-quota
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">hard</span>:
+    <span class="k">requests.cpu</span>: <span class="s">"4"</span>
+    <span class="k">requests.memory</span>: <span class="s">8Gi</span>
+    <span class="k">limits.cpu</span>: <span class="s">"8"</span>
+    <span class="k">limits.memory</span>: <span class="s">16Gi</span></pre>
+        <div class="diagram">
+          <div class="diagram-title">one cluster, walled off</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">ns: myapp-dev</div>
+              <div class="box solid">ns: myapp-prod</div>
+              <div class="box">ns: kube-system<small>don't touch</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 PODS -->
+    <section class="stage" id="pods" data-stage="3">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 03</span> workload</div>
+            <h2>Pods &amp; workloads</h2>
+            <div class="sub">the smallest thing you actually deploy</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A <strong>pod</strong> is one or more containers that share a network namespace (they talk over <code>localhost</code>) and can share storage volumes. It's the smallest unit Kubernetes schedules — but you will almost never create a bare Pod.</p>
+          <p>Instead you wrap pods in a controller that matches the shape of your workload:</p>
+          <ul>
+            <li><strong>Deployment</strong> — stateless, replaceable, rolling updates. Your default choice.</li>
+            <li><strong>StatefulSet</strong> — stable identity and storage per replica. Databases, brokers.</li>
+            <li><strong>DaemonSet</strong> — exactly one pod per node. Log shippers, node agents.</li>
+            <li><strong>Job / CronJob</strong> — run to completion, once or on a schedule.</li>
+          </ul>
+          <p><strong>Resource requests</strong> tell the scheduler how much CPU/memory a pod needs to be placed on a node — and drive the cluster autoscaler. <strong>Limits</strong> cap what it can use. Skip requests and your pod is "BestEffort" — first in line to be evicted when a node runs low.</p>
+          <div class="note"><span class="tag">Senior note</span>Set memory limits close to real usage — an OOM-killed pod restarts cleanly. Be cautious with CPU limits: they cause invisible throttling under load that doesn't show up as an error, just as latency. Measure before you cap.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">deployment.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: apps/v1
+<span class="k">kind</span>: Deployment
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">replicas</span>: 3
+  <span class="k">template</span>:
+    <span class="k">spec</span>:
+      <span class="k">containers</span>:
+      - <span class="k">name</span>: myapp
+        <span class="k">image</span>: myacr.azurecr.io/myapp:1.4.0
+        <span class="k">resources</span>:
+          <span class="k">requests</span>: { <span class="k">cpu</span>: <span class="s">250m</span>, <span class="k">memory</span>: <span class="s">256Mi</span> }
+          <span class="k">limits</span>:   { <span class="k">memory</span>: <span class="s">512Mi</span> }
+        <span class="k">readinessProbe</span>:
+          <span class="k">httpGet</span>: { <span class="k">path</span>: /healthz, <span class="k">port</span>: 8080 }</pre>
+        <div class="diagram">
+          <div class="diagram-title">pod, unpacked</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Pod<small>shared network + volumes</small></div>
+              <div class="box solid">container: myapp</div>
+              <div class="box solid">container: sidecar<small>optional</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 MANAGED IDENTITY -->
+    <section class="stage" id="identity" data-stage="4">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 04</span> identity</div>
+            <h2>Managed identity</h2>
+            <div class="sub">no secrets baked into config maps, ever</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Two identities operate at two different layers — don't conflate them.</p>
+          <p>The <strong>cluster's own managed identity</strong> is what AKS itself uses to talk to Azure: attaching disks, creating a Load Balancer, pulling images from ACR. You barely think about it; Azure sets it up when the cluster is created.</p>
+          <p><strong>Azure AD Workload Identity</strong> is the one you'll use constantly: it lets a specific pod — via its Kubernetes <code>ServiceAccount</code> — exchange a token for a real Azure AD identity, and from there call Key Vault, Storage, or SQL with no client secret anywhere in your YAML.</p>
+          <ul>
+            <li>Create a <strong>user-assigned managed identity</strong> in Azure.</li>
+            <li>Federate it to a Kubernetes <strong>ServiceAccount</strong> via OIDC — no secret changes hands.</li>
+            <li>Grant that identity a role (e.g. <em>Key Vault Secrets User</em>) on the target resource.</li>
+            <li>Your app's SDK picks up the token automatically — nothing app-side to manage.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>If you inherit a cluster still using AAD Pod Identity, flag it — it's deprecated. Workload Identity (OIDC federation) has been the supported path since AKS 1.24 and is what Microsoft's docs assume now.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal + service-account.yaml</div></div>
+        <pre><span class="k">az</span> identity create -g rg-myapp-prod -n id-myapp
+
+<span class="k">az</span> identity federated-credential create \
+  --name myapp-fed \
+  --identity-name id-myapp \
+  --resource-group rg-myapp-prod \
+  --issuer &lt;aks-oidc-issuer-url&gt; \
+  --subject system:serviceaccount:myapp-prod:myapp-sa
+
+<span class="c1"># the pod-facing side</span>
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ServiceAccount
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-sa
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="k">azure.workload.identity/client-id</span>: <span class="s">&lt;identity-client-id&gt;</span></pre>
+        <div class="diagram">
+          <div class="diagram-title">token, not a secret</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">Pod<small>ServiceAccount: myapp-sa</small></div>
+              <span class="arrow">→ oidc token →</span>
+              <div class="box accent">Azure AD</div>
+              <span class="arrow">→</span>
+              <div class="box solid">Key Vault / Storage</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 STORAGE -->
+    <section class="stage" id="storage" data-stage="5">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 05</span> state</div>
+            <h2>Azure storage</h2>
+            <div class="sub">pods are ephemeral by design</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Anything a container writes to its own filesystem vanishes on restart. For anything that needs to survive, AKS ships three CSI drivers pre-installed, each suited to a different access pattern:</p>
+          <ul>
+            <li><strong>Azure Disk</strong> — block storage, <code>ReadWriteOnce</code> (one pod at a time). The default for a database's data directory.</li>
+            <li><strong>Azure Files</strong> — an SMB/NFS share, <code>ReadWriteMany</code> (many pods at once). Shared config, uploads.</li>
+            <li><strong>Azure Blob</strong> — object storage, mounted via CSI or called directly from app code. Large unstructured data, backups.</li>
+          </ul>
+          <p>The flow is always: <strong>StorageClass</strong> (how to provision) → <strong>PersistentVolumeClaim</strong> (a pod's request for storage) → <strong>Pod</strong> (mounts the claim as a volume).</p>
+          <div class="note"><span class="tag">Senior note</span>Disk-backed volumes are zone-bound. If your node pool spans zones but the disk was provisioned in only one, a rescheduled pod can get stuck <code>Pending</code> waiting for a node in the disk's zone. Match your StorageClass's <code>allowedTopologies</code> to your node pool's zones.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">storage.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: storage.k8s.io/v1
+<span class="k">kind</span>: StorageClass
+<span class="k">metadata</span>:
+  <span class="k">name</span>: managed-premium-zrs
+<span class="k">provisioner</span>: disk.csi.azure.com
+<span class="k">parameters</span>:
+  <span class="k">skuName</span>: PremiumV2_ZRS
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: PersistentVolumeClaim
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-data
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">storageClassName</span>: managed-premium-zrs
+  <span class="k">accessModes</span>: [<span class="s">ReadWriteOnce</span>]
+  <span class="k">resources</span>:
+    <span class="k">requests</span>: { <span class="k">storage</span>: <span class="s">20Gi</span> }</pre>
+        <div class="diagram">
+          <div class="diagram-title">claim chain</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">StorageClass</div><span class="arrow">→</span>
+              <div class="box solid">PVC</div><span class="arrow">→</span>
+              <div class="box accent">Pod volume mount</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 SERVICES / LB -->
+    <section class="stage" id="loadbalancing" data-stage="6">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 06</span> traffic in · layer 4</div>
+            <h2>Services &amp; load balancing</h2>
+            <div class="sub">a stable address for a shifting set of pods</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Pods die and get replaced with new IPs constantly. A <strong>Service</strong> gives them one stable address regardless of which pods are behind it at any moment.</p>
+          <ul>
+            <li><strong>ClusterIP</strong> (default) — reachable only inside the cluster. Most services should be this.</li>
+            <li><strong>NodePort</strong> — opens a port on every node. Rarely used directly.</li>
+            <li><strong>LoadBalancer</strong> — provisions an actual Azure Standard Load Balancer with a public (or, via annotation, private) IP.</li>
+          </ul>
+          <p>This is <strong>Layer 4</strong>: it balances TCP/UDP connections across nodes with zero awareness of HTTP paths, hostnames, or headers. For that, you need Ingress or Gateway API — next.</p>
+          <div class="note"><span class="tag">Senior note</span>Every <code>type: LoadBalancer</code> Service provisions its own Azure Load Balancer and its own public IP. Fine for one or two entry points; expensive and hard to manage once you have ten services to expose. That's exactly the problem Ingress solves.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">service.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Service
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="c1"># drop this line for a public IP instead</span>
+    <span class="k">service.beta.kubernetes.io/azure-load-balancer-internal</span>: <span class="s">"true"</span>
+<span class="k">spec</span>:
+  <span class="k">type</span>: LoadBalancer
+  <span class="k">selector</span>: { <span class="k">app</span>: myapp }
+  <span class="k">ports</span>:
+  - { <span class="k">port</span>: 443, <span class="k">targetPort</span>: 8080 }</pre>
+        <div class="diagram">
+          <div class="diagram-title">l4 — connection level</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Azure Load Balancer</div><span class="arrow">→</span>
+              <div class="box solid">Service<small>ClusterIP</small></div><span class="arrow">→</span>
+              <div class="box solid">Pod</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 INGRESS -->
+    <section class="stage" id="ingress" data-stage="7">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 07</span> traffic in · layer 7</div>
+            <h2>Ingress</h2>
+            <div class="sub">one IP, routed by hostname and path</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Ingress operates at <strong>Layer 7</strong>: one public IP in front of the cluster, routing by hostname and URL path, terminating TLS in a single place instead of per-service.</p>
+          <p>Two common controllers on AKS:</p>
+          <ul>
+            <li><strong>NGINX Ingress Controller</strong> — open source, installed via Helm, the default choice for most teams.</li>
+            <li><strong>Application Gateway Ingress Controller (AGIC)</strong> — routes through a real Azure Application Gateway, brings a managed WAF.</li>
+          </ul>
+          <p>An Ingress resource is just routing rules; something still has to run the controller that reads them and configures a real proxy.</p>
+          <div class="note"><span class="tag">Senior note</span>The Ingress API is stable but frozen — it can't cleanly express weighted traffic splitting or cross-namespace routing. That gap is exactly why Gateway API exists. Don't fight Ingress into doing something it wasn't built for.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">ingress.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: networking.k8s.io/v1
+<span class="k">kind</span>: Ingress
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="k">cert-manager.io/cluster-issuer</span>: <span class="s">letsencrypt</span>
+<span class="k">spec</span>:
+  <span class="k">ingressClassName</span>: nginx
+  <span class="k">tls</span>:
+  - { <span class="k">hosts</span>: [<span class="s">app.example.com</span>], <span class="k">secretName</span>: myapp-tls }
+  <span class="k">rules</span>:
+  - <span class="k">host</span>: app.example.com
+    <span class="k">http</span>:
+      <span class="k">paths</span>:
+      - <span class="k">path</span>: /
+        <span class="k">pathType</span>: Prefix
+        <span class="k">backend</span>:
+          <span class="k">service</span>: { <span class="k">name</span>: myapp, <span class="k">port</span>: { <span class="k">number</span>: 443 } }</pre>
+        <div class="diagram">
+          <div class="diagram-title">l7 — routed by host/path</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">NGINX / AGIC</div><span class="arrow">→</span>
+              <div class="box solid">Service A</div>
+              <div class="box solid">Service B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 GATEWAY API -->
+    <section class="stage" id="gateway" data-stage="8">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 08</span> traffic in · next gen</div>
+            <h2>Gateway API</h2>
+            <div class="sub">Ingress, split by who owns what</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Gateway API is Ingress's successor, and it fixes the ownership problem by splitting one YAML file into role-shaped resources:</p>
+          <ul>
+            <li><strong>GatewayClass</strong> — a class of gateway implementation. Owned by whoever manages the cluster.</li>
+            <li><strong>Gateway</strong> — an actual listener and IP. Owned by the platform team.</li>
+            <li><strong>HTTPRoute</strong> — routing rules for one app. Owned by the app team, and can live in the app's own namespace.</li>
+          </ul>
+          <p>Azure's managed implementation is <strong>Application Gateway for Containers (AGC)</strong>. The practical win: app teams ship their own routing changes without ever touching the shared Gateway resource or filing a ticket with platform.</p>
+          <div class="note"><span class="tag">Senior note</span>Don't migrate a working Ingress setup just to be on the newer thing. Reach for Gateway API when you actually need what it offers — weighted/canary routing, or routes that app teams own directly in their own namespace.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">gateway.yaml + httproute.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: gateway.networking.k8s.io/v1
+<span class="k">kind</span>: Gateway
+<span class="k">metadata</span>:
+  <span class="k">name</span>: shared-gw
+  <span class="k">namespace</span>: platform
+<span class="k">spec</span>:
+  <span class="k">gatewayClassName</span>: azure-alb-external
+  <span class="k">listeners</span>:
+  - { <span class="k">name</span>: https, <span class="k">port</span>: 443, <span class="k">protocol</span>: HTTPS }
+---
+<span class="k">apiVersion</span>: gateway.networking.k8s.io/v1
+<span class="k">kind</span>: HTTPRoute
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-route
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">parentRefs</span>: [{ <span class="k">name</span>: shared-gw, <span class="k">namespace</span>: platform }]
+  <span class="k">hostnames</span>: [<span class="s">app.example.com</span>]
+  <span class="k">rules</span>:
+  - <span class="k">backendRefs</span>: [{ <span class="k">name</span>: myapp, <span class="k">port</span>: 443 }]</pre>
+        <div class="diagram">
+          <div class="diagram-title">split by ownership</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Gateway<small>platform team</small></div><span class="arrow">←</span>
+              <div class="box solid">HTTPRoute<small>app team, own ns</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BIG PICTURE -->
+    <section class="bigpicture" id="bigpicture">
+      <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
+      <h2 style="margin:0 0 .4rem;font-size:1.5rem;">One request, start to finish</h2>
+      <p style="color:var(--ink-dim);max-width:65ch;margin:0 0 1.4rem;">Everything above, in one frame. Identity and storage sit beside the cluster because pods reach out to them directly — they're not on the path a user's HTTP request takes.</p>
+
+      <div class="bp-frame">
+        <div class="diagram-title">rg-myapp-prod</div>
+        <div class="bp-grid">
+          <div class="bp-card">
+            <h4>VNet → AKS cluster</h4>
+            <div class="pool">
+              <div class="lbl">system node pool</div>
+              <div class="box-row"><div class="box">node</div><div class="box">coredns</div><div class="box">metrics-server</div></div>
+            </div>
+            <div class="pool">
+              <div class="lbl">user node pool · ns: myapp-prod</div>
+              <div class="box-row"><div class="box solid">node</div><div class="box accent">pod × 3</div></div>
+            </div>
+          </div>
+          <div class="bp-card">
+            <h4>Managed identity</h4>
+            <p style="margin:0;font-size:.85rem;color:var(--ink-dim)">Federated to the pod's ServiceAccount. Grants the app a token — no secrets in YAML.</p>
+          </div>
+          <div class="bp-card">
+            <h4>Azure storage</h4>
+            <p style="margin:0;font-size:.85rem;color:var(--ink-dim)">Disk (db data) · Files (shared config) · Blob (uploads) — mounted or called directly by the pod.</p>
+          </div>
+        </div>
+        <div class="flow">
+          <div class="box solid">client</div><span class="arrow">→</span>
+          <div class="box solid">public IP</div><span class="arrow">→</span>
+          <div class="box accent">Ingress / Gateway<small>L7 routing, TLS</small></div><span class="arrow">→</span>
+          <div class="box solid">Service<small>ClusterIP</small></div><span class="arrow">→</span>
+          <div class="box accent">Pod</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHEAT SHEET -->
+    <section class="cheat" id="cheatsheet">
+      <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">REFERENCE</span> cheat sheet</div>
+      <h2 style="margin:0 0 1.2rem;font-size:1.5rem;">Commands you'll actually type</h2>
+      <div class="cheat-wrap">
+        <table class="cheat">
+          <thead><tr><th>Stage</th><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>Foundation</td><td><code>az group create</code></td><td>Create the resource group everything lives in</td></tr>
+            <tr><td>Foundation</td><td><code>az network vnet create</code></td><td>Create the VNet/subnet nodes attach to</td></tr>
+            <tr><td>Cluster</td><td><code>az aks create</code></td><td>Provision the control plane + first node pool</td></tr>
+            <tr><td>Cluster</td><td><code>az aks get-credentials</code></td><td>Pull cluster credentials into your local kubeconfig</td></tr>
+            <tr><td>Cluster</td><td><code>az aks nodepool add</code></td><td>Add a second, workload-dedicated node pool</td></tr>
+            <tr><td>Namespaces</td><td><code>kubectl create namespace &lt;name&gt;</code></td><td>Create an isolation boundary for an app/env</td></tr>
+            <tr><td>Namespaces</td><td><code>kubectl config set-context --current --namespace=&lt;name&gt;</code></td><td>Stop typing <code>-n</code> on every command</td></tr>
+            <tr><td>Pods</td><td><code>kubectl apply -f deployment.yaml</code></td><td>Create/update a Deployment</td></tr>
+            <tr><td>Pods</td><td><code>kubectl rollout status deploy/&lt;name&gt;</code></td><td>Watch a rollout to completion</td></tr>
+            <tr><td>Pods</td><td><code>kubectl describe pod &lt;name&gt;</code></td><td>First stop when a pod won't schedule or start</td></tr>
+            <tr><td>Identity</td><td><code>az identity create</code></td><td>Create a user-assigned managed identity</td></tr>
+            <tr><td>Identity</td><td><code>az identity federated-credential create</code></td><td>Federate the identity to a ServiceAccount via OIDC</td></tr>
+            <tr><td>Storage</td><td><code>kubectl get storageclass</code></td><td>List available provisioners on the cluster</td></tr>
+            <tr><td>Storage</td><td><code>kubectl get pvc -n &lt;ns&gt;</code></td><td>Check whether a claim actually bound to a volume</td></tr>
+            <tr><td>Load balancing</td><td><code>kubectl get svc -n &lt;ns&gt;</code></td><td>See the external IP assigned to a LoadBalancer Service</td></tr>
+            <tr><td>Ingress</td><td><code>helm install ingress-nginx ...</code></td><td>Install the NGINX ingress controller</td></tr>
+            <tr><td>Ingress</td><td><code>kubectl get ingress -n &lt;ns&gt;</code></td><td>Confirm host/path rules and the assigned address</td></tr>
+            <tr><td>Gateway API</td><td><code>kubectl get gateway,httproute -A</code></td><td>List gateways and routes cluster-wide</td></tr>
+            <tr><td>Everywhere</td><td><code>kubectl logs -f &lt;pod&gt; -n &lt;ns&gt;</code></td><td>Tail logs from a running pod</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="page">
+  A working reference, not a substitute for the official <a href="https://learn.microsoft.com/en-us/azure/aks/" target="_blank" rel="noopener">AKS docs</a> — commands and API versions drift; verify against your cluster's actual Kubernetes version before running anything in production.
+</footer>
+
+<script>
+(function(){
+  var STORE_KEY = 'aks-dashboard-progress-v1';
+  var stages = Array.prototype.slice.call(document.querySelectorAll('section.stage'));
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('#stage-nav a[href^="#"]'));
+  var fill = document.getElementById('progress-fill');
+  var pct = document.getElementById('progress-pct');
+
+  function load(){
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function save(state){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  var state = load();
+
+  function navFor(id){
+    return navLinks.filter(function(a){ return a.getAttribute('href') === '#' + id; })[0];
+  }
+
+  function render(){
+    var total = stages.length, done = 0;
+    stages.forEach(function(sec){
+      var id = sec.id;
+      var checked = !!state[id];
+      if (checked) done++;
+      var btn = sec.querySelector('.stage-check');
+      btn.setAttribute('aria-pressed', checked ? 'true' : 'false');
+      var link = navFor(id);
+      if (link) link.classList.toggle('done', checked);
+    });
+    var p = total ? Math.round((done/total)*100) : 0;
+    fill.style.width = p + '%';
+    pct.textContent = p + '%';
+  }
+
+  stages.forEach(function(sec){
+    var btn = sec.querySelector('.stage-check');
+    if (!btn) return;
+    btn.addEventListener('click', function(){
+      var id = sec.id;
+      state[id] = !state[id];
+      save(state);
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
