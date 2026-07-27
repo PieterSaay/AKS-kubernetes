@@ -302,6 +302,22 @@
 
   /* ---------- big picture ---------- */
   .bigpicture{ padding:2.6rem 0; border-top:1px solid var(--line); }
+  .bp-poster{
+    margin:0 0 1.6rem; border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; background:#0a1220; box-shadow:var(--shadow);
+  }
+  .bp-poster a{ line-height:0; }
+  .bp-poster img{ display:block; width:100%; height:auto; }
+  .bp-poster figcaption{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:.7rem 1rem; border-top:1px solid var(--line);
+    background:var(--surface); font-family:var(--font-display);
+    font-size:.72rem; color:var(--ink-faint); flex-wrap:wrap;
+  }
+  .bp-poster figcaption a{
+    color:var(--accent); text-decoration:none; flex:none;
+  }
+  .bp-poster figcaption a:hover{ text-decoration:underline; }
   .bp-frame{
     border:1px dashed var(--line); border-radius:14px; padding:1.4rem;
   }
@@ -891,6 +907,16 @@
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
       <h2 style="margin:0 0 .4rem;font-size:1.5rem;">One request, start to finish</h2>
       <p style="color:var(--ink-dim);max-width:65ch;margin:0 0 1.4rem;">Everything above, in one frame. Identity and storage sit beside the cluster because pods reach out to them directly — they're not on the path a user's HTTP request takes.</p>
+
+      <figure class="bp-poster">
+        <a href="architecture.png" target="_blank" rel="noopener">
+          <img src="architecture.png" alt="Diagram of myapp running on AKS: client traffic flows through a public IP, Ingress/Gateway, and a ClusterIP Service into a pod; the pod sits inside a user node pool in the AKS cluster's VNet, alongside a system node pool, within resource group rg-myapp-prod; managed identity and Azure storage connect directly to the pod." loading="lazy" />
+        </a>
+        <figcaption>
+          <span>static reference diagram — same architecture, portable as one image</span>
+          <a href="architecture.png" download>download PNG ↓</a>
+        </figcaption>
+      </figure>
 
       <div class="bp-frame">
         <div class="diagram-title">rg-myapp-prod</div>
