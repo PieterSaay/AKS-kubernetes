@@ -766,6 +766,354 @@
       </div>
     </section>
 
+    <!-- 08 SERVICES -->
+    <section class="stage" id="services" data-stage="8">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 08</span> core objects</div>
+            <h2>Services</h2>
+            <div class="sub">a stable address for a shifting set of pods</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Pods die and get replaced with new IPs constantly. A <strong>Service</strong> gives them one stable address regardless of which pods are behind it at any moment — it's a label selector plus a virtual IP, not a process.</p>
+          <ul>
+            <li><strong>ClusterIP</strong> (default) — reachable only inside the cluster. Most services should be this.</li>
+            <li><strong>NodePort</strong> — opens a port on every node. Rarely used directly.</li>
+            <li><strong>LoadBalancer</strong> — on AKS, provisions an actual Azure Standard Load Balancer with a public (or, via annotation, private) IP.</li>
+          </ul>
+          <p>This is <strong>Layer 4</strong>: it balances TCP/UDP connections across nodes with zero awareness of HTTP paths, hostnames, or headers. For that, you need Ingress — stage 15.</p>
+          <div class="note"><span class="tag">Senior note</span>Every <code>type: LoadBalancer</code> Service provisions its own Azure Load Balancer and its own public IP. Fine for one or two entry points; expensive and hard to manage once you have ten services to expose. That's exactly the problem Ingress solves.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">service.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Service
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="c1"># drop this line for a public IP instead</span>
+    <span class="k">service.beta.kubernetes.io/azure-load-balancer-internal</span>: <span class="s">"true"</span>
+<span class="k">spec</span>:
+  <span class="k">type</span>: LoadBalancer
+  <span class="k">selector</span>: { <span class="k">app</span>: myapp }
+  <span class="k">ports</span>:
+  - { <span class="k">port</span>: 443, <span class="k">targetPort</span>: 8080 }</pre>
+        <div class="diagram">
+          <div class="diagram-title">l4 — connection level</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Azure Load Balancer</div><span class="arrow">→</span>
+              <div class="box solid">Service<small>ClusterIP</small></div><span class="arrow">→</span>
+              <div class="box solid">Pod</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 LABELS & SELECTORS -->
+    <section class="stage" id="labels-selectors" data-stage="9">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 09</span> core objects</div>
+            <h2>Labels &amp; selectors</h2>
+            <div class="sub">how Kubernetes finds things</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Labels are arbitrary key-value tags on objects. Selectors are queries against those tags. Nearly every relationship in Kubernetes — which pods a Deployment owns, which pods a Service routes to — is a selector matching labels, not a direct pointer.</p>
+          <ul>
+            <li>A Deployment's <code>selector.matchLabels</code> must match its pod template's labels — mismatch it and the Deployment can't find its own pods.</li>
+            <li>Services find pods by selector, not by name — rename or replace a pod and nothing breaks.</li>
+            <li>Annotations look similar but aren't selectable. Use labels for anything you query on; annotations for metadata tooling reads (build SHA, owner).</li>
+            <li><code>kubectl get pods -l app=myapp,tier=backend</code> — selector syntax works from the CLI too.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A classic self-inflicted outage: someone edits a Deployment's label selector "to tidy it up." Selectors are immutable on Deployments for exactly this reason — you have to recreate the object, not patch it.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">metadata</span>:
+  <span class="k">labels</span>: { <span class="k">app</span>: myapp, <span class="k">tier</span>: backend, <span class="k">env</span>: prod }
+
+<span class="c1"># find pods by label from the CLI</span>
+<span class="k">kubectl</span> get pods -l app=myapp,tier=backend
+<span class="k">kubectl</span> get pods -l <span class="s">'env in (prod,staging)'</span></pre>
+        <div class="diagram">
+          <div class="diagram-title">selector matches labels, not names</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">selector: app=myapp</div><span class="arrow">→</span>
+              <div class="box solid">pod<small>app=myapp, tier=backend</small></div>
+              <div class="box solid">pod<small>app=myapp, tier=backend</small></div>
+              <div class="box"><small>app=other — not matched</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 NAMESPACES -->
+    <section class="stage" id="namespaces" data-stage="10">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 10</span> core objects</div>
+            <h2>Namespaces</h2>
+            <div class="sub">a logical wall, not a security boundary</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A namespace partitions one cluster into separate zones for names, quotas, and permissions. It does <em>not</em> isolate at the kernel or network level by default — a pod in <code>dev</code> can still reach a pod in <code>prod</code> unless a <code>NetworkPolicy</code> says otherwise (stage 21).</p>
+          <p>Three ship built in: <code>default</code>, <code>kube-system</code> (cluster internals — leave it alone), and <code>kube-public</code>. Everything you create should get its own.</p>
+          <ul>
+            <li>One namespace per <strong>environment</strong> (or per team, or per app) — pick a convention and stick to it.</li>
+            <li><strong>ResourceQuota</strong> caps total CPU/memory a namespace can consume.</li>
+            <li><strong>RoleBinding</strong> scopes who can do what, per namespace (stage 20).</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A namespace stops your team from starving another team's CPU quota. It does nothing against a container escape or a misconfigured Service reaching across namespaces — that's a different layer entirely.</div>
+          <div class="chips"><span class="chip">kubectl create namespace</span><span class="chip">ResourceQuota</span><span class="chip">LimitRange</span><span class="chip">RoleBinding</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">namespace.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Namespace
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-prod
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ResourceQuota
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-quota
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">hard</span>:
+    <span class="k">requests.cpu</span>: <span class="s">"4"</span>
+    <span class="k">requests.memory</span>: <span class="s">8Gi</span>
+    <span class="k">limits.cpu</span>: <span class="s">"8"</span>
+    <span class="k">limits.memory</span>: <span class="s">16Gi</span></pre>
+        <div class="diagram">
+          <div class="diagram-title">one cluster, walled off</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">ns: myapp-dev</div>
+              <div class="box solid">ns: myapp-prod</div>
+              <div class="box">ns: kube-system<small>don't touch</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 CONFIGMAPS & SECRETS -->
+    <section class="stage" id="configmaps-secrets" data-stage="11">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 11</span> core objects</div>
+            <h2>ConfigMaps &amp; Secrets</h2>
+            <div class="sub">configuration that lives outside the image</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Baking config into an image means rebuilding it for every environment. ConfigMaps and Secrets let the same image run in dev, staging, and prod with different config injected at deploy time — as env vars or mounted files.</p>
+          <ul>
+            <li><strong>ConfigMap</strong> — non-sensitive config: feature flags, URLs, log levels.</li>
+            <li><strong>Secret</strong> — same shape, but base64-encoded (not encrypted by default) and handled specially by RBAC. Base64 is encoding, not security.</li>
+            <li>Mount as env vars for values read once at startup; mount as a volume for values that should update without a restart.</li>
+            <li>On AKS, prefer <strong>Azure Key Vault</strong> + the Secrets Store CSI Driver (backed by the Workload Identity from stage 20) over native Secrets for anything genuinely sensitive.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A Secret changing doesn't restart pods that mounted it as an env var — they keep the stale value until the next rollout. Mount as a volume if it needs to update live, or trigger a rollout on change with a checksum annotation.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">config.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ConfigMap
+<span class="k">metadata</span>: { <span class="k">name</span>: myapp-config, <span class="k">namespace</span>: myapp-prod }
+<span class="k">data</span>:
+  <span class="k">LOG_LEVEL</span>: <span class="s">info</span>
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Secret
+<span class="k">metadata</span>: { <span class="k">name</span>: myapp-secret, <span class="k">namespace</span>: myapp-prod }
+<span class="k">stringData</span>:
+  <span class="k">API_KEY</span>: <span class="s">change-me</span>
+---
+<span class="c1"># in the pod spec:</span>
+<span class="k">envFrom</span>:
+- <span class="k">configMapRef</span>: { <span class="k">name</span>: myapp-config }
+- <span class="k">secretRef</span>: { <span class="k">name</span>: myapp-secret }</pre>
+      </div>
+    </section>
+
+    <!-- 12 HEALTH PROBES -->
+    <section class="stage" id="health-probes" data-stage="12">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 12</span> reliability &amp; state</div>
+            <h2>Health probes</h2>
+            <div class="sub">how Kubernetes knows a pod actually works</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A pod with status "Running" isn't the same as a pod that's ready to serve traffic. Probes are how you tell Kubernetes the difference.</p>
+          <ul>
+            <li><strong>livenessProbe</strong> — fails repeatedly and Kubernetes kills and restarts the container. For "it's stuck," not "it's slow."</li>
+            <li><strong>readinessProbe</strong> — fails and the pod is pulled out of Service endpoints, but not restarted. For "not ready yet."</li>
+            <li><strong>startupProbe</strong> — covers slow-starting apps; liveness/readiness don't start checking until this passes.</li>
+            <li>HTTP, TCP, or exec — pick whichever actually reflects health; an exec probe that always returns 0 tells you nothing.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>The single most common self-inflicted outage: a liveness probe with too aggressive a timeout on a service that occasionally runs a slow query. It kills healthy pods in a loop under load — exactly when you can least afford it. When in doubt, make liveness lenient and readiness strict.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">probes.yaml</div></div>
+        <pre><span class="k">containers</span>:
+- <span class="k">name</span>: myapp
+  <span class="k">startupProbe</span>:
+    <span class="k">httpGet</span>: { <span class="k">path</span>: /healthz, <span class="k">port</span>: 8080 }
+    <span class="k">failureThreshold</span>: 30
+    <span class="k">periodSeconds</span>: 2
+  <span class="k">readinessProbe</span>:
+    <span class="k">httpGet</span>: { <span class="k">path</span>: /ready, <span class="k">port</span>: 8080 }
+    <span class="k">periodSeconds</span>: 5
+  <span class="k">livenessProbe</span>:
+    <span class="k">httpGet</span>: { <span class="k">path</span>: /healthz, <span class="k">port</span>: 8080 }
+    <span class="k">periodSeconds</span>: 15
+    <span class="k">timeoutSeconds</span>: 5
+    <span class="k">failureThreshold</span>: 3</pre>
+        <div class="diagram">
+          <div class="diagram-title">what each probe governs</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box">startupProbe<small>blocks the other two</small></div>
+              <div class="box solid">readinessProbe<small>in/out of Service</small></div>
+              <div class="box accent">livenessProbe<small>restart container</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 VOLUMES, PV, PVC, STORAGECLASS -->
+    <section class="stage" id="volumes-storage" data-stage="13">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 13</span> reliability &amp; state</div>
+            <h2>Volumes, PV, PVC, StorageClass</h2>
+            <div class="sub">pods are ephemeral by design</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Anything a container writes to its own filesystem vanishes on restart. The chain that survives it: a <strong>StorageClass</strong> (how to provision), a <strong>PersistentVolumeClaim</strong> (a pod's request for storage), and the <strong>PersistentVolume</strong> the cluster binds to it.</p>
+          <ul>
+            <li>AKS ships three CSI drivers pre-installed: <strong>Azure Disk</strong> (block, <code>ReadWriteOnce</code> — one pod at a time, good for a database), <strong>Azure Files</strong> (SMB/NFS, <code>ReadWriteMany</code> — shared config), <strong>Azure Blob</strong> (object storage, large unstructured data).</li>
+            <li>A PVC is a request, not a guarantee — it stays <code>Pending</code> until something can satisfy it.</li>
+            <li>Deleting a PVC's pod doesn't delete the PVC; deleting the PVC's <em>reclaimPolicy</em> decides whether the underlying disk is deleted or retained.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Disk-backed volumes are zone-bound. If your node pool spans zones but the disk was provisioned in only one, a rescheduled pod can get stuck <code>Pending</code> waiting for a node in the disk's zone. Match the StorageClass's <code>allowedTopologies</code> to your node pool's zones.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">storage.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: storage.k8s.io/v1
+<span class="k">kind</span>: StorageClass
+<span class="k">metadata</span>:
+  <span class="k">name</span>: managed-premium-zrs
+<span class="k">provisioner</span>: disk.csi.azure.com
+<span class="k">parameters</span>:
+  <span class="k">skuName</span>: PremiumV2_ZRS
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: PersistentVolumeClaim
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-data
+  <span class="k">namespace</span>: myapp-prod
+<span class="k">spec</span>:
+  <span class="k">storageClassName</span>: managed-premium-zrs
+  <span class="k">accessModes</span>: [<span class="s">ReadWriteOnce</span>]
+  <span class="k">resources</span>:
+    <span class="k">requests</span>: { <span class="k">storage</span>: <span class="s">20Gi</span> }</pre>
+        <div class="diagram">
+          <div class="diagram-title">claim chain</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">StorageClass</div><span class="arrow">→</span>
+              <div class="box solid">PVC</div><span class="arrow">→</span>
+              <div class="box accent">Pod volume mount</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 STATEFULSETS -->
+    <section class="stage" id="statefulsets" data-stage="14">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 14</span> reliability &amp; state</div>
+            <h2>StatefulSets</h2>
+            <div class="sub">when identity and order matter</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A Deployment's pods are interchangeable — replica #2 dying and coming back with a new name and a new disk is fine. A StatefulSet exists for workloads where that's not fine: databases, brokers, anything where "which one is this" and "in what order did it start" matters.</p>
+          <ul>
+            <li>Stable, predictable pod names — <code>myapp-0</code>, <code>myapp-1</code>, <code>myapp-2</code>, not random suffixes.</li>
+            <li>Each replica gets its own PVC via <code>volumeClaimTemplates</code>, and keeps the same one across restarts.</li>
+            <li>Ordered, sequential start/stop by default (0, then 1, then 2) — matters for clustered databases with a defined join order.</li>
+            <li>Needs a <strong>headless Service</strong> (<code>clusterIP: None</code>) so each pod gets its own stable DNS name.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Most teams reach for a StatefulSet before they need one. If the data belongs in a managed Azure service (Azure Database for PostgreSQL, Cosmos DB), running it yourself on a StatefulSet is usually more operational burden than benefit — good to know it exists, better to avoid needing it.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">statefulset.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: apps/v1
+<span class="k">kind</span>: StatefulSet
+<span class="k">metadata</span>: { <span class="k">name</span>: myapp-db, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">serviceName</span>: myapp-db     <span class="c1"># headless Service</span>
+  <span class="k">replicas</span>: 3
+  <span class="k">selector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: myapp-db } }
+  <span class="k">template</span>:
+    <span class="k">metadata</span>: { <span class="k">labels</span>: { <span class="k">app</span>: myapp-db } }
+    <span class="k">spec</span>: { <span class="k">containers</span>: [{ <span class="k">name</span>: db, <span class="k">image</span>: postgres:16 }] }
+  <span class="k">volumeClaimTemplates</span>:
+  - <span class="k">metadata</span>: { <span class="k">name</span>: data }
+    <span class="k">spec</span>:
+      <span class="k">accessModes</span>: [<span class="s">ReadWriteOnce</span>]
+      <span class="k">resources</span>: { <span class="k">requests</span>: { <span class="k">storage</span>: <span class="s">50Gi</span> } }</pre>
+        <div class="diagram">
+          <div class="diagram-title">stable identity, own disk each</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">myapp-db-0<small>+ own PVC</small></div>
+              <div class="box solid">myapp-db-1<small>+ own PVC</small></div>
+              <div class="box solid">myapp-db-2<small>+ own PVC</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- BIG PICTURE -->
     <section class="bigpicture" id="bigpicture">
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
