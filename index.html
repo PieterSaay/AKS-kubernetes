@@ -1426,6 +1426,301 @@
       </div>
     </section>
 
+    <!-- 22 HELM -->
+    <section class="stage" id="helm" data-stage="22">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 22</span> operating a cluster</div>
+            <h2>Helm</h2>
+            <div class="sub">package manager for Kubernetes manifests</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Once you're managing more than a handful of YAML files per app, templating and versioning them by hand gets old fast. Helm packages manifests into a <strong>chart</strong> with values you override per environment, and tracks what's installed as a <strong>release</strong> you can upgrade or roll back as one unit.</p>
+          <ul>
+            <li><strong>Chart</strong> — a directory of templated YAML plus a <code>values.yaml</code> of defaults.</li>
+            <li><strong>Release</strong> — one installed instance of a chart in a cluster/namespace, with its own override values.</li>
+            <li><code>helm upgrade --install</code> is idempotent — safe on first install and every deploy after.</li>
+            <li>Most infra you'd otherwise hand-write (NGINX ingress controller, cert-manager, Prometheus) ships as an official chart — check before you write it yourself.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Run <code>helm diff</code> (plugin) or <code>--dry-run</code> before every upgrade in prod. A chart's default values changing between versions is a common source of "I only bumped the version number" surprises.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">helm</span> repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+<span class="k">helm</span> upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.replicaCount=2
+
+<span class="k">helm</span> list -n ingress-nginx
+<span class="k">helm</span> rollback ingress-nginx 1 -n ingress-nginx</pre>
+      </div>
+    </section>
+
+    <!-- 23 MONITORING & LOGGING -->
+    <section class="stage" id="monitoring-logging" data-stage="23">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 23</span> operating a cluster</div>
+            <h2>Monitoring &amp; logging</h2>
+            <div class="sub">knowing what's actually happening</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede"><code>kubectl logs</code> and <code>describe</code> are your first line of defense, but they don't scale past one incident on one pod. Real operations needs metrics and logs aggregated somewhere that survives the pod that produced them.</p>
+          <ul>
+            <li><strong>Metrics</strong> — Prometheus (often the <code>kube-prometheus-stack</code> chart) scrapes cluster and app metrics; on AKS, Azure Monitor managed Prometheus is the managed alternative.</li>
+            <li><strong>Dashboards</strong> — Grafana, usually paired with Prometheus.</li>
+            <li><strong>Logs</strong> — pods should log stdout/stderr only; a node-level agent (Fluent Bit, Azure Monitor Container Insights) ships it off-node before the pod disappears.</li>
+            <li><strong>metrics-server</strong> (already running in your system pool since stage 03) powers <code>kubectl top</code> and HPA — not a full monitoring stack, just enough for those two.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>If your only copy of a pod's logs is <code>kubectl logs</code>, you have zero logs the moment that pod is evicted. Anything you'd need for a postmortem has to leave the node before that happens.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">kubectl</span> top pods -n myapp-prod
+<span class="k">kubectl</span> logs myapp-7d9f -n myapp-prod --previous
+
+<span class="c1"># enable Container Insights on an existing cluster</span>
+<span class="k">az</span> aks enable-addons -a monitoring \
+  --name aks-myapp-prod --resource-group rg-myapp-prod</pre>
+        <div class="diagram">
+          <div class="diagram-title">two pipelines</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">pod stdout</div><span class="arrow">→</span>
+              <div class="box solid">node agent</div><span class="arrow">→</span>
+              <div class="box accent">log store</div>
+            </div>
+            <div class="box-row" style="margin-top:.5rem">
+              <div class="box solid">metrics-server</div><span class="arrow">→</span>
+              <div class="box solid">Prometheus</div><span class="arrow">→</span>
+              <div class="box accent">Grafana</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 24 AUTOSCALING -->
+    <section class="stage" id="autoscaling" data-stage="24">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 24</span> operating a cluster</div>
+            <h2>Autoscaling</h2>
+            <div class="sub">three different things scale, for three different reasons</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">"Autoscaling" in Kubernetes is actually three separate mechanisms, each solving a different bottleneck.</p>
+          <ul>
+            <li><strong>HorizontalPodAutoscaler (HPA)</strong> — adds/removes pod replicas based on CPU/memory or custom metrics. Solves "not enough pods for the traffic."</li>
+            <li><strong>VerticalPodAutoscaler (VPA)</strong> — adjusts a pod's requests/limits over time based on observed usage. Rarely run alongside HPA on the same metric.</li>
+            <li><strong>Cluster Autoscaler</strong> — adds/removes nodes when pods are unschedulable or nodes sit idle. Solves "not enough room in the cluster."</li>
+            <li>They stack: HPA decides you need more pods → scheduler can't place them → Cluster Autoscaler adds a node.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>HPA needs requests set (stage 18) to compute a percentage at all — no requests, no scaling decision, full stop.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">hpa.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: autoscaling/v2
+<span class="k">kind</span>: HorizontalPodAutoscaler
+<span class="k">metadata</span>: { <span class="k">name</span>: myapp, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">scaleTargetRef</span>: { <span class="k">apiVersion</span>: apps/v1, <span class="k">kind</span>: Deployment, <span class="k">name</span>: myapp }
+  <span class="k">minReplicas</span>: 3
+  <span class="k">maxReplicas</span>: 10
+  <span class="k">metrics</span>:
+  - <span class="k">type</span>: Resource
+    <span class="k">resource</span>: { <span class="k">name</span>: cpu, <span class="k">target</span>: { <span class="k">type</span>: Utilization, <span class="k">averageUtilization</span>: 70 } }</pre>
+        <div class="diagram">
+          <div class="diagram-title">the chain reaction</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">HPA: +pods</div><span class="arrow">→</span>
+              <div class="box solid">unschedulable</div><span class="arrow">→</span>
+              <div class="box solid">Cluster Autoscaler: +node</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 25 TROUBLESHOOTING -->
+    <section class="stage" id="troubleshooting" data-stage="25">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 25</span> operating a cluster</div>
+            <h2>Troubleshooting</h2>
+            <div class="sub">a repeatable order of operations, not guessing</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Almost every "something's broken" starts the same way. Work outward from the pod before you start suspecting the network or the cluster.</p>
+          <ul>
+            <li><code>kubectl get pods</code> — the status tells you where to look: <code>Pending</code> (can't schedule), <code>CrashLoopBackOff</code> (starts then dies), <code>ImagePullBackOff</code> (can't fetch the image).</li>
+            <li><code>kubectl describe pod</code> — the <strong>Events</strong> section at the bottom almost always holds the real reason.</li>
+            <li><code>kubectl logs</code> (add <code>--previous</code> if it already restarted) — what the app itself said before it died.</li>
+            <li><code>kubectl get events --sort-by=.lastTimestamp -n &lt;ns&gt;</code> — cluster-wide events when it's not obviously one pod's fault.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><code>Pending</code> almost always means the scheduler can't find a fit — check node resources, taints/tolerations, and PVC binding before suspecting the app. <code>CrashLoopBackOff</code> almost always means the app itself is exiting — that's a logs problem, not a Kubernetes problem.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">the checklist</div></div>
+        <pre><span class="k">kubectl</span> get pods -n myapp-prod
+<span class="k">kubectl</span> describe pod myapp-7d9f -n myapp-prod    <span class="c1"># check Events</span>
+<span class="k">kubectl</span> logs myapp-7d9f -n myapp-prod --previous
+<span class="k">kubectl</span> get events -n myapp-prod --sort-by=.lastTimestamp</pre>
+        <div class="diagram">
+          <div class="diagram-title">status → where to look</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box">Pending<small>scheduler / PVC</small></div>
+              <div class="box">CrashLoopBackOff<small>app logs</small></div>
+              <div class="box">ImagePullBackOff<small>registry / tag</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 26 CI/CD & GITOPS -->
+    <section class="stage" id="cicd-gitops" data-stage="26">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 26</span> shipping &amp; mastery</div>
+            <h2>CI/CD &amp; GitOps</h2>
+            <div class="sub">how changes actually get to the cluster</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Manually <code>kubectl apply</code>-ing from a laptop doesn't scale past a demo. Two patterns replace it, and most real setups combine them.</p>
+          <ul>
+            <li><strong>CI pipeline</strong> (GitHub Actions, Azure Pipelines) — builds the image, runs tests, pushes to ACR on every commit.</li>
+            <li><strong>Push-based deploy</strong> — the pipeline itself runs <code>kubectl apply</code> or <code>helm upgrade</code> against the cluster.</li>
+            <li><strong>GitOps</strong> (Flux, Argo CD) — pull-based instead: an operator inside the cluster watches a Git repo and reconciles the cluster to match it. Nothing outside the cluster gets direct push access.</li>
+            <li>Git becomes the single source of truth — a manual <code>kubectl apply</code> not reflected in Git is now drift the GitOps operator will quietly revert.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>GitOps' biggest real benefit isn't automation, it's the audit trail — every change to the cluster is a Git commit with an author and a diff, which turns "what changed right before this broke" from an afternoon into a five-second question.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">.github/workflows/deploy.yml</div></div>
+        <pre><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: docker build -t $ACR/myapp:${{ github.sha }} .
+      - <span class="k">run</span>: docker push $ACR/myapp:${{ github.sha }}
+      - <span class="k">run</span>: |
+          <span class="c1"># push-based:</span>
+          kubectl set image deploy/myapp myapp=$ACR/myapp:${{ github.sha }}
+          <span class="c1"># GitOps instead: commit the new tag, let Flux/Argo CD apply it</span></pre>
+        <div class="diagram">
+          <div class="diagram-title">pull, not push</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">Git commit</div><span class="arrow">→</span>
+              <div class="box solid">CI builds &amp; pushes image</div><span class="arrow">→</span>
+              <div class="box accent">GitOps operator reconciles cluster</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 27 REAL PROJECT -->
+    <section class="stage" id="real-project" data-stage="27">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 27</span> shipping &amp; mastery</div>
+            <h2>Real project</h2>
+            <div class="sub">stop reading, go build one</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Everything above is inert until you've wired it together end to end, hit the errors, and fixed them yourself. Pick one small, real application and take it through every stage above, in order, against a real AKS cluster.</p>
+          <ul>
+            <li>Containerize it (1), push to ACR, deploy as a Deployment (7) with real probes (12) and resource limits (18).</li>
+            <li>Give it its own namespace (10), ConfigMap/Secret (11), and a PVC if it needs to persist anything (13).</li>
+            <li>Expose it through a Service (8) and Ingress (15); lock it down with RBAC and a NetworkPolicy (20, 21).</li>
+            <li>Wire a CI pipeline to build and deploy it on every push (26), then break it on purpose and practice stage 25 to fix it.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>The projects that teach the most are the boring ones — a CRUD API with a database is enough. You're not trying to impress anyone with the app; you're trying to hit real Kubernetes failure modes with something you understand completely.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">build checklist</div></div>
+        <div class="diagram" style="border-top:none">
+          <div class="diagram-title">touch every one of these</div>
+          <div class="chips">
+            <span class="chip">Docker</span><span class="chip">Deployment</span><span class="chip">Service</span>
+            <span class="chip">Namespace</span><span class="chip">ConfigMap</span><span class="chip">Secret</span>
+            <span class="chip">PVC</span><span class="chip">Probes</span><span class="chip">Ingress</span>
+            <span class="chip">RBAC</span><span class="chip">NetworkPolicy</span><span class="chip">CI/CD</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 28 CKA/CKS/CKAD PREP -->
+    <section class="stage" id="cka-cks-ckad" data-stage="28">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 28</span> shipping &amp; mastery</div>
+            <h2>CKA/CKS/CKAD prep</h2>
+            <div class="sub">turning what you've learned into a certification</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Three CNCF certifications, same format: open-book, terminal-only, timed hands-on labs — no multiple choice, just kubectl and a clock.</p>
+          <ul>
+            <li><strong>CKAD</strong> (Application Developer) — closest to stages 1–19 above: pods, deployments, config, probes, storage, from the app author's side.</li>
+            <li><strong>CKA</strong> (Administrator) — adds cluster install/upgrade, etcd backup/restore, node troubleshooting — the operator's side of stages 3, 20, 25.</li>
+            <li><strong>CKS</strong> (Security Specialist) — requires a current CKA; goes deep on stages 20–21 plus supply-chain and runtime security.</li>
+            <li>All three are entirely hands-on in a real terminal — practice speed with kubectl and <code>kubectl edit</code> under a countdown, not just correctness.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>killer.sh (included with every registration) is the closest simulation to the real exam's difficulty and UI. Run it a week out, not the night before, so you have time to fix what it exposes.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">speed tips</div></div>
+        <pre><span class="c1"># the two aliases every exam-taker sets up first</span>
+<span class="k">alias</span> k=kubectl
+<span class="k">export</span> do=<span class="s">"--dry-run=client -o yaml"</span>
+
+<span class="c1"># stop typing -n on every command</span>
+<span class="k">kubectl</span> config set-context --current --namespace=myapp-prod</pre>
+        <div class="diagram">
+          <div class="diagram-title">which cert covers what</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">CKAD<small>stages 1–19</small></div>
+              <div class="box solid">CKA<small>+ 3, 20, 25</small></div>
+              <div class="box accent">CKS<small>+ 20–21 deep, supply chain</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- BIG PICTURE -->
     <section class="bigpicture" id="bigpicture">
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
