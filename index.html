@@ -1114,6 +1114,318 @@
       </div>
     </section>
 
+    <!-- 15 INGRESS -->
+    <section class="stage" id="ingress" data-stage="15">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 15</span> traffic</div>
+            <h2>Ingress</h2>
+            <div class="sub">one IP, routed by hostname and path</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Ingress operates at <strong>Layer 7</strong>: one public IP in front of the cluster, routing by hostname and URL path, terminating TLS in a single place instead of per-service.</p>
+          <p>Two common controllers on AKS:</p>
+          <ul>
+            <li><strong>NGINX Ingress Controller</strong> — open source, installed via Helm, the default choice for most teams.</li>
+            <li><strong>Application Gateway Ingress Controller (AGIC)</strong> — routes through a real Azure Application Gateway, brings a managed WAF.</li>
+          </ul>
+          <p>An Ingress resource is just routing rules; something still has to run the controller that reads them and configures a real proxy.</p>
+          <div class="note"><span class="tag">Senior note</span>The Ingress API is stable but frozen — it can't cleanly express weighted traffic splitting or cross-namespace routing. That's what the newer <strong>Gateway API</strong> (Azure's managed flavor: Application Gateway for Containers) exists to fix. Worth knowing it exists; don't fight Ingress into doing something it wasn't built for.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">ingress.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: networking.k8s.io/v1
+<span class="k">kind</span>: Ingress
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="k">cert-manager.io/cluster-issuer</span>: <span class="s">letsencrypt</span>
+<span class="k">spec</span>:
+  <span class="k">ingressClassName</span>: nginx
+  <span class="k">tls</span>:
+  - { <span class="k">hosts</span>: [<span class="s">app.example.com</span>], <span class="k">secretName</span>: myapp-tls }
+  <span class="k">rules</span>:
+  - <span class="k">host</span>: app.example.com
+    <span class="k">http</span>:
+      <span class="k">paths</span>:
+      - <span class="k">path</span>: /
+        <span class="k">pathType</span>: Prefix
+        <span class="k">backend</span>:
+          <span class="k">service</span>: { <span class="k">name</span>: myapp, <span class="k">port</span>: { <span class="k">number</span>: 443 } }</pre>
+        <div class="diagram">
+          <div class="diagram-title">l7 — routed by host/path</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">NGINX / AGIC</div><span class="arrow">→</span>
+              <div class="box solid">Service A</div>
+              <div class="box solid">Service B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 NETWORKING BASICS -->
+    <section class="stage" id="networking-basics" data-stage="16">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 16</span> traffic</div>
+            <h2>Networking basics</h2>
+            <div class="sub">the rules every pod already gets for free</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Kubernetes networking has one foundational rule: every pod gets its own IP, and every pod can reach every other pod's IP directly, cluster-wide, no NAT — regardless of which node they're on. Services, Ingress, and policies are all built on top of that flat model.</p>
+          <ul>
+            <li><strong>CNI plugin</strong> — Azure CNI (pods get real, VNet-routable IPs) or kubenet (pods get an overlay IP, NAT'd at the node). Decided at cluster creation, hard to change later.</li>
+            <li><strong>kube-proxy</strong> — runs on every node, programs the rules that make a Service's virtual IP actually route to real pod IPs.</li>
+            <li><strong>CoreDNS</strong> — cluster-internal DNS. Every Service gets a name: <code>myapp.myapp-prod.svc.cluster.local</code>.</li>
+            <li>DNS resolution inside a pod follows its namespace's search domains — <code>myapp</code> resolves in the same namespace, <code>myapp.other-ns</code> reaches across.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>"Pod can't reach pod" is almost never actually a Kubernetes networking bug — it's usually an NSG rule at the Azure VNet layer, or a NetworkPolicy (stage 21) doing exactly what it was configured to do. Check those two before you suspect the CNI.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">kubectl</span> get svc myapp -n myapp-prod
+<span class="k">kubectl</span> get endpoints myapp -n myapp-prod
+<span class="k">kubectl</span> run dnsutils --rm -it --image=gcr.io/kubernetes-e2e-test-images/dnsutils -- \
+  nslookup myapp.myapp-prod.svc.cluster.local</pre>
+        <div class="diagram">
+          <div class="diagram-title">flat network model</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">node A<small>pod 10.244.1.4</small></div>
+              <div class="box solid">node B<small>pod 10.244.2.7</small></div>
+              <span class="arrow">&#8596; direct, no NAT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 17 JOBS, CRONJOBS, DAEMONSETS -->
+    <section class="stage" id="jobs-cronjobs-daemonsets" data-stage="17">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 17</span> scheduling &amp; workloads</div>
+            <h2>Jobs, CronJobs, DaemonSets</h2>
+            <div class="sub">workloads that aren't "always-on services"</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Not everything is a long-running web server. Three more controllers cover the rest of the shape space.</p>
+          <ul>
+            <li><strong>Job</strong> — runs a pod to completion, retries on failure, then stops. Migrations, one-off batch tasks.</li>
+            <li><strong>CronJob</strong> — a Job on a schedule, cron syntax. Nightly reports, cleanup tasks.</li>
+            <li><strong>DaemonSet</strong> — runs exactly one pod per node, automatically added when a new node joins. Log shippers, node-level monitoring agents.</li>
+            <li><code>completions</code> / <code>parallelism</code> on a Job control how many pods run in total, and how many run at once.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>A CronJob's <code>concurrencyPolicy</code> defaults to <code>Allow</code> — a slow run and its next scheduled run can overlap and execute concurrently. Set it to <code>Forbid</code> for anything that isn't safe to run twice at once.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">cronjob.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: batch/v1
+<span class="k">kind</span>: CronJob
+<span class="k">metadata</span>: { <span class="k">name</span>: nightly-report, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">schedule</span>: <span class="s">"0 2 * * *"</span>
+  <span class="k">concurrencyPolicy</span>: Forbid
+  <span class="k">jobTemplate</span>:
+    <span class="k">spec</span>:
+      <span class="k">template</span>:
+        <span class="k">spec</span>:
+          <span class="k">containers</span>: [{ <span class="k">name</span>: report, <span class="k">image</span>: myacr.azurecr.io/report-job:1.0 }]
+          <span class="k">restartPolicy</span>: OnFailure</pre>
+      </div>
+    </section>
+
+    <!-- 18 RESOURCE REQUESTS & LIMITS -->
+    <section class="stage" id="resource-requests-limits" data-stage="18">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 18</span> scheduling &amp; workloads</div>
+            <h2>Resource requests &amp; limits</h2>
+            <div class="sub">what the scheduler and the kernel actually enforce</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede"><strong>Requests</strong> are what the scheduler uses to decide which node has room for a pod. <strong>Limits</strong> are what the kernel enforces once it's running. Two different questions — mixing them up causes two different classes of incident.</p>
+          <ul>
+            <li>No request set → the pod is <em>BestEffort</em>, first to be evicted when a node runs low on resources.</li>
+            <li><strong>CPU limit</strong> → throttled, not killed. The container keeps running but slows down, often invisibly — it shows up as latency, not an error.</li>
+            <li><strong>Memory limit</strong> → OOM-killed, not throttled. Hit it and the container is terminated and restarted immediately.</li>
+            <li>Requests should reflect steady-state usage; limits should reflect the worst case you're willing to tolerate — set both from real metrics, not guesses.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Set requests too high across a namespace and the cluster autoscaler adds nodes you don't need, purely because the scheduler thinks there's no room. Check actual usage with <code>kubectl top pods</code> before tuning either number.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal + resources.yaml</div></div>
+        <pre><span class="k">resources</span>:
+  <span class="k">requests</span>: { <span class="k">cpu</span>: <span class="s">250m</span>, <span class="k">memory</span>: <span class="s">256Mi</span> }
+  <span class="k">limits</span>:   { <span class="k">memory</span>: <span class="s">512Mi</span> }
+
+<span class="k">kubectl</span> top pods -n myapp-prod
+<span class="k">kubectl</span> top nodes</pre>
+        <div class="diagram">
+          <div class="diagram-title">two different failure modes</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">CPU limit hit<small>throttled → slow, no crash</small></div>
+              <div class="box accent">memory limit hit<small>OOMKilled → restart</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19 TAINTS, TOLERATIONS, AFFINITY -->
+    <section class="stage" id="taints-tolerations-affinity" data-stage="19">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 19</span> scheduling &amp; workloads</div>
+            <h2>Taints, tolerations, affinity</h2>
+            <div class="sub">steering which pods land where</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">By default the scheduler treats all matching nodes as interchangeable. Three mechanisms narrow that down — one from the node's side, two from the pod's.</p>
+          <ul>
+            <li><strong>Taint</strong> (on a node) — repels pods unless they carry a matching toleration. "Nothing schedules here unless it explicitly says it's OK."</li>
+            <li><strong>Toleration</strong> (on a pod) — the pod's half of the handshake: "I'm fine running on that tainted node."</li>
+            <li><strong>Node affinity</strong> — "schedule me only on nodes with label X" (or preferably, softly).</li>
+            <li><strong>Pod anti-affinity</strong> — "schedule me away from other pods matching this label" — how you spread replicas across nodes or zones so one failure doesn't take out the whole Deployment.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>AKS's system node pool ships tainted <code>CriticalAddonsOnly=true:NoSchedule</code> in many setups specifically to keep app workloads off it — the pattern from stage 03, now with the actual mechanism behind it.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal + affinity.yaml</div></div>
+        <pre><span class="k">kubectl</span> taint nodes aks-system-001 CriticalAddonsOnly=true:NoSchedule
+
+<span class="c1"># the pod's side:</span>
+<span class="k">tolerations</span>:
+- { <span class="k">key</span>: CriticalAddonsOnly, <span class="k">operator</span>: Equal, <span class="k">value</span>: <span class="s">"true"</span>, <span class="k">effect</span>: NoSchedule }
+
+<span class="k">affinity</span>:
+  <span class="k">podAntiAffinity</span>:
+    <span class="k">requiredDuringSchedulingIgnoredDuringExecution</span>:
+    - <span class="k">topologyKey</span>: kubernetes.io/hostname
+      <span class="k">labelSelector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: myapp } }</pre>
+      </div>
+    </section>
+
+    <!-- 20 RBAC & SERVICEACCOUNTS -->
+    <section class="stage" id="rbac-serviceaccounts" data-stage="20">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 20</span> security</div>
+            <h2>RBAC &amp; ServiceAccounts</h2>
+            <div class="sub">who's allowed to do what, and who is the pod</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">RBAC governs humans and automation calling the Kubernetes API; a <strong>ServiceAccount</strong> is a pod's identity when it calls that same API. Same authorization model, just a different caller.</p>
+          <ul>
+            <li><strong>Role / ClusterRole</strong> — a set of permitted verbs (get, list, watch, create...) on a set of resources, namespaced or cluster-wide.</li>
+            <li><strong>RoleBinding / ClusterRoleBinding</strong> — grants a Role to a user, group, or ServiceAccount.</li>
+            <li>Every pod runs as a ServiceAccount (<code>default</code>, if you don't specify one) — and that default account should almost always have zero permissions.</li>
+            <li>On AKS, <strong>Azure AD Workload Identity</strong> federates a ServiceAccount to a real Azure identity — authentication to Azure, layered on top of (not instead of) this Kubernetes-native authorization model.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>The default ServiceAccount in every namespace can, by default, do almost nothing — good. The mistake is granting it broad permissions "to unblock something quickly" and forgetting every unspecified pod in that namespace inherits it.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">rbac.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: rbac.authorization.k8s.io/v1
+<span class="k">kind</span>: Role
+<span class="k">metadata</span>: { <span class="k">name</span>: pod-reader, <span class="k">namespace</span>: myapp-prod }
+<span class="k">rules</span>:
+- { <span class="k">apiGroups</span>: [<span class="s">""</span>], <span class="k">resources</span>: [<span class="s">pods</span>], <span class="k">verbs</span>: [<span class="s">get</span>, <span class="s">list</span>, <span class="s">watch</span>] }
+---
+<span class="k">apiVersion</span>: rbac.authorization.k8s.io/v1
+<span class="k">kind</span>: RoleBinding
+<span class="k">metadata</span>: { <span class="k">name</span>: read-pods, <span class="k">namespace</span>: myapp-prod }
+<span class="k">subjects</span>:
+- { <span class="k">kind</span>: ServiceAccount, <span class="k">name</span>: myapp-sa, <span class="k">namespace</span>: myapp-prod }
+<span class="k">roleRef</span>: { <span class="k">kind</span>: Role, <span class="k">name</span>: pod-reader, <span class="k">apiGroup</span>: rbac.authorization.k8s.io }</pre>
+        <div class="diagram">
+          <div class="diagram-title">two identities, two layers</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">ServiceAccount</div><span class="arrow">→</span>
+              <div class="box solid">RoleBinding</div><span class="arrow">→</span>
+              <div class="box accent">Role<small>permitted verbs</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21 NETWORK POLICIES & SECURITY -->
+    <section class="stage" id="network-policies" data-stage="21">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 21</span> security</div>
+            <h2>Network Policies &amp; security basics</h2>
+            <div class="sub">the flat network isn't the final answer</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Stage 16 established that every pod can reach every other pod by default. A <strong>NetworkPolicy</strong> takes that back — an allow-list firewall scoped to pod selectors, enforced by the CNI plugin, not the API server itself.</p>
+          <ul>
+            <li><strong>Default-deny</strong> — a NetworkPolicy selecting a pod with no rules blocks all traffic to it; you then add explicit allow rules.</li>
+            <li><strong>Ingress</strong> rules control what can call in; <strong>egress</strong> rules control what the pod itself can call out to.</li>
+            <li>Requires a CNI that actually enforces NetworkPolicy — Azure CNI does with Azure Network Policy or Calico enabled. Check this isn't silently a no-op on your cluster.</li>
+            <li>Beyond NetworkPolicy: Pod Security Standards (no privileged containers, no host network) and image scanning round out baseline security.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Applying your first default-deny NetworkPolicy in a namespace with existing traffic is a great way to cause an outage that looks like nothing changed on your end. Map every legitimate path first and ship the allow rules alongside the deny, not after.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">networkpolicy.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: networking.k8s.io/v1
+<span class="k">kind</span>: NetworkPolicy
+<span class="k">metadata</span>: { <span class="k">name</span>: myapp-allow, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">podSelector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: myapp } }
+  <span class="k">policyTypes</span>: [<span class="s">Ingress</span>]
+  <span class="k">ingress</span>:
+  - <span class="k">from</span>:
+    - <span class="k">namespaceSelector</span>: { <span class="k">matchLabels</span>: { <span class="k">kubernetes.io/metadata.name</span>: myapp-prod } }
+    <span class="k">ports</span>: [{ <span class="k">port</span>: 8080 }]</pre>
+        <div class="diagram">
+          <div class="diagram-title">allow-list, not a suggestion</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">same-ns pod<small>allowed</small></div>
+              <div class="box accent">myapp pod</div>
+              <div class="box"><small>other ns — blocked</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- BIG PICTURE -->
     <section class="bigpicture" id="bigpicture">
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
