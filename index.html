@@ -249,6 +249,27 @@
     font-family:var(--font-display); font-size:0.66rem; letter-spacing:0.08em;
     text-transform:uppercase; color:var(--warn); flex:none; padding-top:0.15rem;
   }
+  .note.rec{ border-left-color:var(--accent-2); }
+  .note.rec .tag{ color:var(--accent-2); }
+
+  .review{
+    display:flex; gap:1rem;
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--surface); box-shadow:var(--shadow);
+    padding:1.2rem 1.4rem; margin:0 0 3.2rem;
+  }
+  .review .mark-badge{
+    flex:none; width:38px; height:38px; border-radius:9px;
+    background:var(--accent-soft); border:1px solid var(--accent);
+    color:var(--accent); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:0.78rem; font-weight:700;
+  }
+  .review-copy .eyebrow{ margin-bottom:0.4rem; }
+  .review-copy h3{ margin:0 0 0.6rem; font-size:1.05rem; }
+  .review-copy ol{ margin:0; padding-left:1.15rem; }
+  .review-copy li{ margin-bottom:0.45rem; color:var(--ink); }
+  .review-copy li:last-child{ margin-bottom:0; }
+  .review-copy li b{ color:var(--ink); }
 
   .chips{ display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:1rem; }
   .chip{
@@ -448,6 +469,21 @@
         use the rail to jump back in later.
       </p>
       <div class="byline">written for a junior programmer · reviewed the way a senior devops engineer would review a PR</div>
+    </div>
+
+    <!-- SENIOR REVIEW SUMMARY -->
+    <div class="review">
+      <div class="mark-badge">SR</div>
+      <div class="review-copy">
+        <div class="eyebrow">reviewed · where to focus first</div>
+        <h3>If you only take four things from this pass</h3>
+        <ol>
+          <li><b>Stages 1–9 are load-bearing.</b> Don't skim them to get to the "interesting" parts — every later stage assumes fluency here, and gaps here compound.</li>
+          <li><b>Stage 18 (resource requests &amp; limits) causes more real incidents than any other single gap on this list.</b> Missing or guessed requests break scheduling, autoscaling, and eviction all at once — treat it as core, not optional tuning.</li>
+          <li><b>Stages 20 (RBAC) and 21 (NetworkPolicy) belong on day one, not "hardening later."</b> Every team that plans to retrofit security after traffic exists ends up doing it during an incident instead.</li>
+          <li><b>Start the real project (27) around stage 10, not after stage 28.</b> You retain a mechanism by breaking it yourself far better than by reading about it — let the project run parallel to the curriculum.</li>
+        </ol>
+      </div>
     </div>
 
     <!-- 01 CONTAINERS & DOCKER -->
