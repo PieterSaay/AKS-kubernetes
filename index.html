@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>AKS Field Manual — Standing Up a New Azure Environment</title>
+<title>Kubernetes Field Manual — 28-Stage Learning Path on AKS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
 
@@ -167,9 +167,9 @@
   nav.stages a .chk{
     width:14px; height:14px; border-radius:4px; border:1px solid var(--line);
     flex:none; display:inline-flex; align-items:center; justify-content:center;
-    font-size:10px; color:var(--good);
+    font-size:10px; color:var(--good); opacity:0;
   }
-  nav.stages a.done .chk{ border-color:var(--good); background:var(--accent-soft); }
+  nav.stages a.done .chk{ border-color:var(--good); background:var(--accent-soft); opacity:1; }
   nav.stages .divider{ height:1px; background:var(--line); margin:0.6rem 0.2rem; }
   nav.stages .phase{
     font-family:var(--font-display); font-size:0.64rem; letter-spacing:0.1em;
@@ -469,7 +469,7 @@
             <li><strong>Registry</strong> — where images live (Docker Hub, Azure Container Registry). <code>docker push</code>/<code>pull</code> move them in and out.</li>
             <li>Kubernetes doesn't run Docker directly — AKS nodes use <strong>containerd</strong>, the same OCI runtime Docker is built on. Your Dockerfile and images work unchanged.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A small image ships faster and has a smaller attack surface. Multi-stage builds — compile in one stage, copy only the binary into a minimal final image — routinely cut image size by 10&times;.</div>
+          <div class="note"><span class="tag">Senior note</span><span>A small image ships faster and has a smaller attack surface. Multi-stage builds — compile in one stage, copy only the binary into a minimal final image — routinely cut image size by 10&times;.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -521,7 +521,7 @@
             <li><strong>Everything is an object</strong> — Pods, Services, Deployments are records in the API, persisted in etcd.</li>
             <li>AKS manages the parts that make this promise possible (the control plane); you manage what you ask it to run.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>The mental shift that trips up people coming from VMs: you never "fix" a broken pod. You delete it and let the controller create a new, correct one. Debug the <em>spec</em>, not the individual pod.</div>
+          <div class="note"><span class="tag">Senior note</span><span>The mental shift that trips up people coming from VMs: you never "fix" a broken pod. You delete it and let the controller create a new, correct one. Debug the <em>spec</em>, not the individual pod.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -563,7 +563,7 @@
             <li><strong>kubelet</strong> — the node agent that starts/stops containers per the API server's instructions.</li>
             <li>On AKS the control plane is Azure-managed and mostly invisible; you only operate node pools.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>On AKS the control plane is free and you never patch it — that's the actual value of a managed service. You're responsible for the data plane: node OS patching (largely automated), sizing, and what you schedule onto it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>On AKS the control plane is free and you never patch it — that's the actual value of a managed service. You're responsible for the data plane: node OS patching (largely automated), sizing, and what you schedule onto it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -607,7 +607,7 @@
             <li><code>create</code> / <code>delete</code> — imperative, fine for scratch work, not for anything you want reproducible.</li>
             <li><code>-o yaml</code> / <code>--dry-run=client -o yaml</code> — turn any live object, or any command, into starter YAML.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span><code>kubectl explain &lt;resource&gt;.&lt;field&gt;</code> pulls docs straight from the cluster's own OpenAPI schema — faster than the web docs, and it never drifts from the version you're actually running.</div>
+          <div class="note"><span class="tag">Senior note</span><span><code>kubectl explain &lt;resource&gt;.&lt;field&gt;</code> pulls docs straight from the cluster's own OpenAPI schema — faster than the web docs, and it never drifts from the version you're actually running.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -640,7 +640,7 @@
             <li><strong>Init containers</strong> run to completion before the main container starts — good for "wait for the DB" setup.</li>
             <li><code>kubectl run</code> is for scratch debugging only, never how you ship anything real.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>If you find yourself <code>kubectl apply</code>-ing a bare Pod for anything but a one-off debug container, stop — you want a Deployment. Bare pods don't get rescheduled if the node dies.</div>
+          <div class="note"><span class="tag">Senior note</span><span>If you find yourself <code>kubectl apply</code>-ing a bare Pod for anything but a one-off debug container, stop — you want a Deployment. Bare pods don't get rescheduled if the node dies.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -690,7 +690,7 @@
             <li><strong>metadata</strong> — name, namespace, labels, annotations. Identity and tags, not behavior.</li>
             <li><strong>spec</strong> — the desired state you declare; <code>status</code> is filled in by the cluster, never written by hand.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Indentation is meaningful and it's spaces only. A stray tab is the single most common reason <code>kubectl apply</code> throws a parse error — run everything through <code>--dry-run=client</code> before you commit it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Indentation is meaningful and it's spaces only. A stray tab is the single most common reason <code>kubectl apply</code> throws a parse error — run everything through <code>--dry-run=client</code> before you commit it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -726,7 +726,7 @@
             <li>A rolling update creates a new ReplicaSet and scales it up while scaling the old one down — that's zero-downtime deploys.</li>
             <li><code>kubectl rollout undo</code> is instant because the previous ReplicaSet is still there, just scaled to zero.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span><code>kubectl get replicasets</code> after a few deploys shows old, scaled-to-zero ReplicaSets sitting around — that's normal, it's what makes rollback instant. <code>revisionHistoryLimit</code> controls how many it keeps.</div>
+          <div class="note"><span class="tag">Senior note</span><span><code>kubectl get replicasets</code> after a few deploys shows old, scaled-to-zero ReplicaSets sitting around — that's normal, it's what makes rollback instant. <code>revisionHistoryLimit</code> controls how many it keeps.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -785,7 +785,7 @@
             <li><strong>LoadBalancer</strong> — on AKS, provisions an actual Azure Standard Load Balancer with a public (or, via annotation, private) IP.</li>
           </ul>
           <p>This is <strong>Layer 4</strong>: it balances TCP/UDP connections across nodes with zero awareness of HTTP paths, hostnames, or headers. For that, you need Ingress — stage 15.</p>
-          <div class="note"><span class="tag">Senior note</span>Every <code>type: LoadBalancer</code> Service provisions its own Azure Load Balancer and its own public IP. Fine for one or two entry points; expensive and hard to manage once you have ten services to expose. That's exactly the problem Ingress solves.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Every <code>type: LoadBalancer</code> Service provisions its own Azure Load Balancer and its own public IP. Fine for one or two entry points; expensive and hard to manage once you have ten services to expose. That's exactly the problem Ingress solves.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -835,7 +835,7 @@
             <li>Annotations look similar but aren't selectable. Use labels for anything you query on; annotations for metadata tooling reads (build SHA, owner).</li>
             <li><code>kubectl get pods -l app=myapp,tier=backend</code> — selector syntax works from the CLI too.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A classic self-inflicted outage: someone edits a Deployment's label selector "to tidy it up." Selectors are immutable on Deployments for exactly this reason — you have to recreate the object, not patch it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>A classic self-inflicted outage: someone edits a Deployment's label selector "to tidy it up." Selectors are immutable on Deployments for exactly this reason — you have to recreate the object, not patch it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -879,7 +879,7 @@
             <li><strong>ResourceQuota</strong> caps total CPU/memory a namespace can consume.</li>
             <li><strong>RoleBinding</strong> scopes who can do what, per namespace (stage 20).</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A namespace stops your team from starving another team's CPU quota. It does nothing against a container escape or a misconfigured Service reaching across namespaces — that's a different layer entirely.</div>
+          <div class="note"><span class="tag">Senior note</span><span>A namespace stops your team from starving another team's CPU quota. It does nothing against a container escape or a misconfigured Service reaching across namespaces — that's a different layer entirely.</span></div>
           <div class="chips"><span class="chip">kubectl create namespace</span><span class="chip">ResourceQuota</span><span class="chip">LimitRange</span><span class="chip">RoleBinding</span></div>
         </div>
       </div>
@@ -933,7 +933,7 @@
             <li>Mount as env vars for values read once at startup; mount as a volume for values that should update without a restart.</li>
             <li>On AKS, prefer <strong>Azure Key Vault</strong> + the Secrets Store CSI Driver (backed by the Workload Identity from stage 20) over native Secrets for anything genuinely sensitive.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A Secret changing doesn't restart pods that mounted it as an env var — they keep the stale value until the next rollout. Mount as a volume if it needs to update live, or trigger a rollout on change with a checksum annotation.</div>
+          <div class="note"><span class="tag">Senior note</span><span>A Secret changing doesn't restart pods that mounted it as an env var — they keep the stale value until the next rollout. Mount as a volume if it needs to update live, or trigger a rollout on change with a checksum annotation.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -976,7 +976,7 @@
             <li><strong>startupProbe</strong> — covers slow-starting apps; liveness/readiness don't start checking until this passes.</li>
             <li>HTTP, TCP, or exec — pick whichever actually reflects health; an exec probe that always returns 0 tells you nothing.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>The single most common self-inflicted outage: a liveness probe with too aggressive a timeout on a service that occasionally runs a slow query. It kills healthy pods in a loop under load — exactly when you can least afford it. When in doubt, make liveness lenient and readiness strict.</div>
+          <div class="note"><span class="tag">Senior note</span><span>The single most common self-inflicted outage: a liveness probe with too aggressive a timeout on a service that occasionally runs a slow query. It kills healthy pods in a loop under load — exactly when you can least afford it. When in doubt, make liveness lenient and readiness strict.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1026,7 +1026,7 @@
             <li>A PVC is a request, not a guarantee — it stays <code>Pending</code> until something can satisfy it.</li>
             <li>Deleting a PVC's pod doesn't delete the PVC; deleting the PVC's <em>reclaimPolicy</em> decides whether the underlying disk is deleted or retained.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Disk-backed volumes are zone-bound. If your node pool spans zones but the disk was provisioned in only one, a rescheduled pod can get stuck <code>Pending</code> waiting for a node in the disk's zone. Match the StorageClass's <code>allowedTopologies</code> to your node pool's zones.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Disk-backed volumes are zone-bound. If your node pool spans zones but the disk was provisioned in only one, a rescheduled pod can get stuck <code>Pending</code> waiting for a node in the disk's zone. Match the StorageClass's <code>allowedTopologies</code> to your node pool's zones.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1081,7 +1081,7 @@
             <li>Ordered, sequential start/stop by default (0, then 1, then 2) — matters for clustered databases with a defined join order.</li>
             <li>Needs a <strong>headless Service</strong> (<code>clusterIP: None</code>) so each pod gets its own stable DNS name.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Most teams reach for a StatefulSet before they need one. If the data belongs in a managed Azure service (Azure Database for PostgreSQL, Cosmos DB), running it yourself on a StatefulSet is usually more operational burden than benefit — good to know it exists, better to avoid needing it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Most teams reach for a StatefulSet before they need one. If the data belongs in a managed Azure service (Azure Database for PostgreSQL, Cosmos DB), running it yourself on a StatefulSet is usually more operational burden than benefit — good to know it exists, better to avoid needing it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1133,7 +1133,7 @@
             <li><strong>Application Gateway Ingress Controller (AGIC)</strong> — routes through a real Azure Application Gateway, brings a managed WAF.</li>
           </ul>
           <p>An Ingress resource is just routing rules; something still has to run the controller that reads them and configures a real proxy.</p>
-          <div class="note"><span class="tag">Senior note</span>The Ingress API is stable but frozen — it can't cleanly express weighted traffic splitting or cross-namespace routing. That's what the newer <strong>Gateway API</strong> (Azure's managed flavor: Application Gateway for Containers) exists to fix. Worth knowing it exists; don't fight Ingress into doing something it wasn't built for.</div>
+          <div class="note"><span class="tag">Senior note</span><span>The Ingress API is stable but frozen — it can't cleanly express weighted traffic splitting or cross-namespace routing. That's what the newer <strong>Gateway API</strong> (Azure's managed flavor: Application Gateway for Containers) exists to fix. Worth knowing it exists; don't fight Ingress into doing something it wasn't built for.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1189,7 +1189,7 @@
             <li><strong>CoreDNS</strong> — cluster-internal DNS. Every Service gets a name: <code>myapp.myapp-prod.svc.cluster.local</code>.</li>
             <li>DNS resolution inside a pod follows its namespace's search domains — <code>myapp</code> resolves in the same namespace, <code>myapp.other-ns</code> reaches across.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>"Pod can't reach pod" is almost never actually a Kubernetes networking bug — it's usually an NSG rule at the Azure VNet layer, or a NetworkPolicy (stage 21) doing exactly what it was configured to do. Check those two before you suspect the CNI.</div>
+          <div class="note"><span class="tag">Senior note</span><span>"Pod can't reach pod" is almost never actually a Kubernetes networking bug — it's usually an NSG rule at the Azure VNet layer, or a NetworkPolicy (stage 21) doing exactly what it was configured to do. Check those two before you suspect the CNI.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1230,7 +1230,7 @@
             <li><strong>DaemonSet</strong> — runs exactly one pod per node, automatically added when a new node joins. Log shippers, node-level monitoring agents.</li>
             <li><code>completions</code> / <code>parallelism</code> on a Job control how many pods run in total, and how many run at once.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A CronJob's <code>concurrencyPolicy</code> defaults to <code>Allow</code> — a slow run and its next scheduled run can overlap and execute concurrently. Set it to <code>Forbid</code> for anything that isn't safe to run twice at once.</div>
+          <div class="note"><span class="tag">Senior note</span><span>A CronJob's <code>concurrencyPolicy</code> defaults to <code>Allow</code> — a slow run and its next scheduled run can overlap and execute concurrently. Set it to <code>Forbid</code> for anything that isn't safe to run twice at once.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1269,7 +1269,7 @@
             <li><strong>Memory limit</strong> → OOM-killed, not throttled. Hit it and the container is terminated and restarted immediately.</li>
             <li>Requests should reflect steady-state usage; limits should reflect the worst case you're willing to tolerate — set both from real metrics, not guesses.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Set requests too high across a namespace and the cluster autoscaler adds nodes you don't need, purely because the scheduler thinks there's no room. Check actual usage with <code>kubectl top pods</code> before tuning either number.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Set requests too high across a namespace and the cluster autoscaler adds nodes you don't need, purely because the scheduler thinks there's no room. Check actual usage with <code>kubectl top pods</code> before tuning either number.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1311,7 +1311,7 @@
             <li><strong>Node affinity</strong> — "schedule me only on nodes with label X" (or preferably, softly).</li>
             <li><strong>Pod anti-affinity</strong> — "schedule me away from other pods matching this label" — how you spread replicas across nodes or zones so one failure doesn't take out the whole Deployment.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>AKS's system node pool ships tainted <code>CriticalAddonsOnly=true:NoSchedule</code> in many setups specifically to keep app workloads off it — the pattern from stage 03, now with the actual mechanism behind it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>AKS's system node pool ships tainted <code>CriticalAddonsOnly=true:NoSchedule</code> in many setups specifically to keep app workloads off it — the pattern from stage 03, now with the actual mechanism behind it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1349,7 +1349,7 @@
             <li>Every pod runs as a ServiceAccount (<code>default</code>, if you don't specify one) — and that default account should almost always have zero permissions.</li>
             <li>On AKS, <strong>Azure AD Workload Identity</strong> federates a ServiceAccount to a real Azure identity — authentication to Azure, layered on top of (not instead of) this Kubernetes-native authorization model.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>The default ServiceAccount in every namespace can, by default, do almost nothing — good. The mistake is granting it broad permissions "to unblock something quickly" and forgetting every unspecified pod in that namespace inherits it.</div>
+          <div class="note"><span class="tag">Senior note</span><span>The default ServiceAccount in every namespace can, by default, do almost nothing — good. The mistake is granting it broad permissions "to unblock something quickly" and forgetting every unspecified pod in that namespace inherits it.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1398,7 +1398,7 @@
             <li>Requires a CNI that actually enforces NetworkPolicy — Azure CNI does with Azure Network Policy or Calico enabled. Check this isn't silently a no-op on your cluster.</li>
             <li>Beyond NetworkPolicy: Pod Security Standards (no privileged containers, no host network) and image scanning round out baseline security.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Applying your first default-deny NetworkPolicy in a namespace with existing traffic is a great way to cause an outage that looks like nothing changed on your end. Map every legitimate path first and ship the allow rules alongside the deny, not after.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Applying your first default-deny NetworkPolicy in a namespace with existing traffic is a great way to cause an outage that looks like nothing changed on your end. Map every legitimate path first and ship the allow rules alongside the deny, not after.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1445,7 +1445,7 @@
             <li><code>helm upgrade --install</code> is idempotent — safe on first install and every deploy after.</li>
             <li>Most infra you'd otherwise hand-write (NGINX ingress controller, cert-manager, Prometheus) ships as an official chart — check before you write it yourself.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>Run <code>helm diff</code> (plugin) or <code>--dry-run</code> before every upgrade in prod. A chart's default values changing between versions is a common source of "I only bumped the version number" surprises.</div>
+          <div class="note"><span class="tag">Senior note</span><span>Run <code>helm diff</code> (plugin) or <code>--dry-run</code> before every upgrade in prod. A chart's default values changing between versions is a common source of "I only bumped the version number" surprises.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1479,7 +1479,7 @@
             <li><strong>Logs</strong> — pods should log stdout/stderr only; a node-level agent (Fluent Bit, Azure Monitor Container Insights) ships it off-node before the pod disappears.</li>
             <li><strong>metrics-server</strong> (already running in your system pool since stage 03) powers <code>kubectl top</code> and HPA — not a full monitoring stack, just enough for those two.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>If your only copy of a pod's logs is <code>kubectl logs</code>, you have zero logs the moment that pod is evicted. Anything you'd need for a postmortem has to leave the node before that happens.</div>
+          <div class="note"><span class="tag">Senior note</span><span>If your only copy of a pod's logs is <code>kubectl logs</code>, you have zero logs the moment that pod is evicted. Anything you'd need for a postmortem has to leave the node before that happens.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1527,7 +1527,7 @@
             <li><strong>Cluster Autoscaler</strong> — adds/removes nodes when pods are unschedulable or nodes sit idle. Solves "not enough room in the cluster."</li>
             <li>They stack: HPA decides you need more pods → scheduler can't place them → Cluster Autoscaler adds a node.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>HPA needs requests set (stage 18) to compute a percentage at all — no requests, no scaling decision, full stop.</div>
+          <div class="note"><span class="tag">Senior note</span><span>HPA needs requests set (stage 18) to compute a percentage at all — no requests, no scaling decision, full stop.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1574,7 +1574,7 @@
             <li><code>kubectl logs</code> (add <code>--previous</code> if it already restarted) — what the app itself said before it died.</li>
             <li><code>kubectl get events --sort-by=.lastTimestamp -n &lt;ns&gt;</code> — cluster-wide events when it's not obviously one pod's fault.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span><code>Pending</code> almost always means the scheduler can't find a fit — check node resources, taints/tolerations, and PVC binding before suspecting the app. <code>CrashLoopBackOff</code> almost always means the app itself is exiting — that's a logs problem, not a Kubernetes problem.</div>
+          <div class="note"><span class="tag">Senior note</span><span><code>Pending</code> almost always means the scheduler can't find a fit — check node resources, taints/tolerations, and PVC binding before suspecting the app. <code>CrashLoopBackOff</code> almost always means the app itself is exiting — that's a logs problem, not a Kubernetes problem.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1615,7 +1615,7 @@
             <li><strong>GitOps</strong> (Flux, Argo CD) — pull-based instead: an operator inside the cluster watches a Git repo and reconciles the cluster to match it. Nothing outside the cluster gets direct push access.</li>
             <li>Git becomes the single source of truth — a manual <code>kubectl apply</code> not reflected in Git is now drift the GitOps operator will quietly revert.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>GitOps' biggest real benefit isn't automation, it's the audit trail — every change to the cluster is a Git commit with an author and a diff, which turns "what changed right before this broke" from an afternoon into a five-second question.</div>
+          <div class="note"><span class="tag">Senior note</span><span>GitOps' biggest real benefit isn't automation, it's the audit trail — every change to the cluster is a Git commit with an author and a diff, which turns "what changed right before this broke" from an afternoon into a five-second question.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1661,7 +1661,7 @@
             <li>Expose it through a Service (8) and Ingress (15); lock it down with RBAC and a NetworkPolicy (20, 21).</li>
             <li>Wire a CI pipeline to build and deploy it on every push (26), then break it on purpose and practice stage 25 to fix it.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>The projects that teach the most are the boring ones — a CRUD API with a database is enough. You're not trying to impress anyone with the app; you're trying to hit real Kubernetes failure modes with something you understand completely.</div>
+          <div class="note"><span class="tag">Senior note</span><span>The projects that teach the most are the boring ones — a CRUD API with a database is enough. You're not trying to impress anyone with the app; you're trying to hit real Kubernetes failure modes with something you understand completely.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1697,7 +1697,7 @@
             <li><strong>CKS</strong> (Security Specialist) — requires a current CKA; goes deep on stages 20–21 plus supply-chain and runtime security.</li>
             <li>All three are entirely hands-on in a real terminal — practice speed with kubectl and <code>kubectl edit</code> under a countdown, not just correctness.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>killer.sh (included with every registration) is the closest simulation to the real exam's difficulty and UI. Run it a week out, not the night before, so you have time to fix what it exposes.</div>
+          <div class="note"><span class="tag">Senior note</span><span>killer.sh (included with every registration) is the closest simulation to the real exam's difficulty and UI. Run it a week out, not the night before, so you have time to fix what it exposes.</span></div>
         </div>
       </div>
       <div class="panel">
@@ -1721,11 +1721,11 @@
       </div>
     </section>
 
-    <!-- BIG PICTURE -->
-    <section class="bigpicture" id="bigpicture">
-      <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">ASSEMBLED</span> the full picture</div>
-      <h2 style="margin:0 0 .4rem;font-size:1.5rem;">One request, start to finish</h2>
-      <p style="color:var(--ink-dim);max-width:65ch;margin:0 0 1.4rem;">Everything above, in one frame. Identity and storage sit beside the cluster because pods reach out to them directly — they're not on the path a user's HTTP request takes.</p>
+    <!-- BONUS: ON AKS -->
+    <section class="bigpicture" id="aks-bonus">
+      <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">BONUS</span> mapped onto a real AKS deployment</div>
+      <h2 style="margin:0 0 .4rem;font-size:1.5rem;">The curriculum, assembled into one running app</h2>
+      <p style="color:var(--ink-dim);max-width:65ch;margin:0 0 1.4rem;">Stages 5, 8, 10, 13, 15, and 20 aren't abstract — here's what they look like wired together as one AKS-hosted application. Identity and storage sit beside the cluster because pods reach out to them directly; they're not on the path a user's HTTP request takes.</p>
 
       <figure class="bp-poster">
         <a href="architecture.png" target="_blank" rel="noopener">
@@ -1778,25 +1778,34 @@
         <table class="cheat">
           <thead><tr><th>Stage</th><th>Command</th><th>What it does</th></tr></thead>
           <tbody>
-            <tr><td>Foundation</td><td><code>az group create</code></td><td>Create the resource group everything lives in</td></tr>
-            <tr><td>Foundation</td><td><code>az network vnet create</code></td><td>Create the VNet/subnet nodes attach to</td></tr>
-            <tr><td>Cluster</td><td><code>az aks create</code></td><td>Provision the control plane + first node pool</td></tr>
-            <tr><td>Cluster</td><td><code>az aks get-credentials</code></td><td>Pull cluster credentials into your local kubeconfig</td></tr>
-            <tr><td>Cluster</td><td><code>az aks nodepool add</code></td><td>Add a second, workload-dedicated node pool</td></tr>
-            <tr><td>Namespaces</td><td><code>kubectl create namespace &lt;name&gt;</code></td><td>Create an isolation boundary for an app/env</td></tr>
-            <tr><td>Namespaces</td><td><code>kubectl config set-context --current --namespace=&lt;name&gt;</code></td><td>Stop typing <code>-n</code> on every command</td></tr>
-            <tr><td>Pods</td><td><code>kubectl apply -f deployment.yaml</code></td><td>Create/update a Deployment</td></tr>
-            <tr><td>Pods</td><td><code>kubectl rollout status deploy/&lt;name&gt;</code></td><td>Watch a rollout to completion</td></tr>
-            <tr><td>Pods</td><td><code>kubectl describe pod &lt;name&gt;</code></td><td>First stop when a pod won't schedule or start</td></tr>
-            <tr><td>Identity</td><td><code>az identity create</code></td><td>Create a user-assigned managed identity</td></tr>
-            <tr><td>Identity</td><td><code>az identity federated-credential create</code></td><td>Federate the identity to a ServiceAccount via OIDC</td></tr>
-            <tr><td>Storage</td><td><code>kubectl get storageclass</code></td><td>List available provisioners on the cluster</td></tr>
-            <tr><td>Storage</td><td><code>kubectl get pvc -n &lt;ns&gt;</code></td><td>Check whether a claim actually bound to a volume</td></tr>
-            <tr><td>Load balancing</td><td><code>kubectl get svc -n &lt;ns&gt;</code></td><td>See the external IP assigned to a LoadBalancer Service</td></tr>
-            <tr><td>Ingress</td><td><code>helm install ingress-nginx ...</code></td><td>Install the NGINX ingress controller</td></tr>
-            <tr><td>Ingress</td><td><code>kubectl get ingress -n &lt;ns&gt;</code></td><td>Confirm host/path rules and the assigned address</td></tr>
-            <tr><td>Gateway API</td><td><code>kubectl get gateway,httproute -A</code></td><td>List gateways and routes cluster-wide</td></tr>
+            <tr><td>1 · Docker</td><td><code>docker build -t &lt;image&gt; .</code></td><td>Build an image from a Dockerfile</td></tr>
+            <tr><td>1 · Docker</td><td><code>docker push &lt;image&gt;</code></td><td>Send an image to a registry (e.g. ACR)</td></tr>
+            <tr><td>3 · Architecture</td><td><code>kubectl cluster-info</code></td><td>Confirm the API server is reachable</td></tr>
+            <tr><td>4 · kubectl</td><td><code>kubectl explain &lt;kind&gt;.&lt;field&gt;</code></td><td>Pull field docs straight from the cluster's schema</td></tr>
+            <tr><td>7 · Deployments</td><td><code>kubectl apply -f deployment.yaml</code></td><td>Create/update a Deployment</td></tr>
+            <tr><td>7 · Deployments</td><td><code>kubectl rollout status deploy/&lt;name&gt;</code></td><td>Watch a rollout to completion</td></tr>
+            <tr><td>7 · Deployments</td><td><code>kubectl rollout undo deploy/&lt;name&gt;</code></td><td>Roll back to the previous ReplicaSet</td></tr>
+            <tr><td>8 · Services</td><td><code>kubectl get svc -n &lt;ns&gt;</code></td><td>See the ClusterIP or external IP assigned</td></tr>
+            <tr><td>9 · Labels</td><td><code>kubectl get pods -l app=myapp</code></td><td>Find objects by label selector</td></tr>
+            <tr><td>10 · Namespaces</td><td><code>kubectl create namespace &lt;name&gt;</code></td><td>Create an isolation boundary for an app/env</td></tr>
+            <tr><td>10 · Namespaces</td><td><code>kubectl config set-context --current --namespace=&lt;name&gt;</code></td><td>Stop typing <code>-n</code> on every command</td></tr>
+            <tr><td>13 · Storage</td><td><code>kubectl get storageclass</code></td><td>List available provisioners on the cluster</td></tr>
+            <tr><td>13 · Storage</td><td><code>kubectl get pvc -n &lt;ns&gt;</code></td><td>Check whether a claim actually bound to a volume</td></tr>
+            <tr><td>15 · Ingress</td><td><code>helm install ingress-nginx ...</code></td><td>Install the NGINX ingress controller</td></tr>
+            <tr><td>15 · Ingress</td><td><code>kubectl get ingress -n &lt;ns&gt;</code></td><td>Confirm host/path rules and the assigned address</td></tr>
+            <tr><td>18 · Resources</td><td><code>kubectl top pods -n &lt;ns&gt;</code></td><td>Live CPU/memory usage per pod</td></tr>
+            <tr><td>19 · Taints</td><td><code>kubectl taint nodes &lt;node&gt; key=value:NoSchedule</code></td><td>Repel pods from a node unless tolerated</td></tr>
+            <tr><td>20 · RBAC</td><td><code>kubectl auth can-i create pods -n &lt;ns&gt;</code></td><td>Check a permission before you hit it live</td></tr>
+            <tr><td>21 · NetworkPolicy</td><td><code>kubectl get networkpolicy -n &lt;ns&gt;</code></td><td>List traffic rules scoped to a namespace</td></tr>
+            <tr><td>22 · Helm</td><td><code>helm upgrade --install &lt;rel&gt; &lt;chart&gt;</code></td><td>Install or update a chart, idempotently</td></tr>
+            <tr><td>24 · Autoscaling</td><td><code>kubectl get hpa -n &lt;ns&gt;</code></td><td>Check current/target replicas and utilization</td></tr>
+            <tr><td>25 · Troubleshooting</td><td><code>kubectl describe pod &lt;name&gt;</code></td><td>First stop when a pod won't schedule or start</td></tr>
+            <tr><td>25 · Troubleshooting</td><td><code>kubectl get events --sort-by=.lastTimestamp -n &lt;ns&gt;</code></td><td>Cluster-wide events, newest last</td></tr>
             <tr><td>Everywhere</td><td><code>kubectl logs -f &lt;pod&gt; -n &lt;ns&gt;</code></td><td>Tail logs from a running pod</td></tr>
+            <tr><td>Azure setup</td><td><code>az group create</code></td><td>Create the resource group everything lives in</td></tr>
+            <tr><td>Azure setup</td><td><code>az aks create</code></td><td>Provision the control plane + first node pool</td></tr>
+            <tr><td>Azure setup</td><td><code>az aks get-credentials</code></td><td>Pull cluster credentials into your local kubeconfig</td></tr>
+            <tr><td>Azure setup</td><td><code>az identity federated-credential create</code></td><td>Federate a managed identity to a ServiceAccount via OIDC</td></tr>
           </tbody>
         </table>
       </div>
