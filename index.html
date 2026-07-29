@@ -171,6 +171,12 @@
   }
   nav.stages a.done .chk{ border-color:var(--good); background:var(--accent-soft); }
   nav.stages .divider{ height:1px; background:var(--line); margin:0.6rem 0.2rem; }
+  nav.stages .phase{
+    font-family:var(--font-display); font-size:0.64rem; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--ink-faint);
+    padding:0.9rem 0.5rem 0.25rem; user-select:none;
+  }
+  nav.stages .phase:first-child{ padding-top:0.1rem; }
 
   .rail-foot{
     margin-top:auto; padding-top:1rem; border-top:1px solid var(--line);
@@ -367,7 +373,7 @@
   <aside class="rail">
     <div class="brand">
       <span class="mark">field manual</span>
-      <h1>AKS · Build Order</h1>
+      <h1>Kubernetes on AKS</h1>
     </div>
 
     <div class="progress-wrap">
@@ -376,17 +382,52 @@
     </div>
 
     <nav class="stages" id="stage-nav">
-      <a href="#foundations"><span class="idx">00</span><span class="chk">✓</span>Resource group &amp; VNet</a>
-      <a href="#cluster"><span class="idx">01</span><span class="chk">✓</span>Cluster &amp; nodes</a>
-      <a href="#namespaces"><span class="idx">02</span><span class="chk">✓</span>Namespaces</a>
-      <a href="#pods"><span class="idx">03</span><span class="chk">✓</span>Pods &amp; workloads</a>
-      <a href="#identity"><span class="idx">04</span><span class="chk">✓</span>Managed identity</a>
-      <a href="#storage"><span class="idx">05</span><span class="chk">✓</span>Azure storage</a>
-      <a href="#loadbalancing"><span class="idx">06</span><span class="chk">✓</span>Services &amp; load balancing</a>
-      <a href="#ingress"><span class="idx">07</span><span class="chk">✓</span>Ingress</a>
-      <a href="#gateway"><span class="idx">08</span><span class="chk">✓</span>Gateway API</a>
+      <div class="phase">Foundations</div>
+      <a href="#containers-docker"><span class="idx">01</span><span class="chk">✓</span>Containers &amp; Docker</a>
+      <a href="#k8s-basics"><span class="idx">02</span><span class="chk">✓</span>Kubernetes basics</a>
+      <a href="#architecture"><span class="idx">03</span><span class="chk">✓</span>Architecture</a>
+      <a href="#kubectl"><span class="idx">04</span><span class="chk">✓</span>kubectl</a>
+
+      <div class="phase">Core objects</div>
+      <a href="#pods"><span class="idx">05</span><span class="chk">✓</span>Pods</a>
+      <a href="#yaml"><span class="idx">06</span><span class="chk">✓</span>YAML</a>
+      <a href="#deployments-replicasets"><span class="idx">07</span><span class="chk">✓</span>Deployments &amp; ReplicaSets</a>
+      <a href="#services"><span class="idx">08</span><span class="chk">✓</span>Services</a>
+      <a href="#labels-selectors"><span class="idx">09</span><span class="chk">✓</span>Labels &amp; selectors</a>
+      <a href="#namespaces"><span class="idx">10</span><span class="chk">✓</span>Namespaces</a>
+      <a href="#configmaps-secrets"><span class="idx">11</span><span class="chk">✓</span>ConfigMaps &amp; Secrets</a>
+
+      <div class="phase">Reliability &amp; state</div>
+      <a href="#health-probes"><span class="idx">12</span><span class="chk">✓</span>Health probes</a>
+      <a href="#volumes-storage"><span class="idx">13</span><span class="chk">✓</span>Volumes, PV, PVC, StorageClass</a>
+      <a href="#statefulsets"><span class="idx">14</span><span class="chk">✓</span>StatefulSets</a>
+
+      <div class="phase">Traffic</div>
+      <a href="#ingress"><span class="idx">15</span><span class="chk">✓</span>Ingress</a>
+      <a href="#networking-basics"><span class="idx">16</span><span class="chk">✓</span>Networking basics</a>
+
+      <div class="phase">Scheduling &amp; workloads</div>
+      <a href="#jobs-cronjobs-daemonsets"><span class="idx">17</span><span class="chk">✓</span>Jobs, CronJobs, DaemonSets</a>
+      <a href="#resource-requests-limits"><span class="idx">18</span><span class="chk">✓</span>Resource requests &amp; limits</a>
+      <a href="#taints-tolerations-affinity"><span class="idx">19</span><span class="chk">✓</span>Taints, tolerations, affinity</a>
+
+      <div class="phase">Security</div>
+      <a href="#rbac-serviceaccounts"><span class="idx">20</span><span class="chk">✓</span>RBAC &amp; ServiceAccounts</a>
+      <a href="#network-policies"><span class="idx">21</span><span class="chk">✓</span>Network Policies &amp; security</a>
+
+      <div class="phase">Operating a cluster</div>
+      <a href="#helm"><span class="idx">22</span><span class="chk">✓</span>Helm</a>
+      <a href="#monitoring-logging"><span class="idx">23</span><span class="chk">✓</span>Monitoring &amp; logging</a>
+      <a href="#autoscaling"><span class="idx">24</span><span class="chk">✓</span>Autoscaling</a>
+      <a href="#troubleshooting"><span class="idx">25</span><span class="chk">✓</span>Troubleshooting</a>
+
+      <div class="phase">Shipping &amp; mastery</div>
+      <a href="#cicd-gitops"><span class="idx">26</span><span class="chk">✓</span>CI/CD &amp; GitOps</a>
+      <a href="#real-project"><span class="idx">27</span><span class="chk">✓</span>Real project</a>
+      <a href="#cka-cks-ckad"><span class="idx">28</span><span class="chk">✓</span>CKA/CKS/CKAD prep</a>
+
       <div class="divider"></div>
-      <a href="#bigpicture" style="opacity:.75">↳ full picture</a>
+      <a href="#aks-bonus" style="opacity:.75">↳ bonus: on AKS</a>
       <a href="#cheatsheet" style="opacity:.75">↳ cheat sheet</a>
     </nav>
 
@@ -397,206 +438,299 @@
 
   <main>
     <div class="hero">
-      <div class="eyebrow">for pietersaay · junior dev → aks</div>
-      <h1>Everything you need to stand up <em>one application</em> on AKS, in the order you'll actually build it.</h1>
+      <div class="eyebrow">for pietersaay · junior dev → kubernetes</div>
+      <h1>Learn Kubernetes in the order a senior engineer would actually teach it — <em>28 stops</em>, start to certification-ready.</h1>
       <p>
-        This isn't the whole of Kubernetes — it's the slice a senior engineer would walk you through
-        on day one of shipping a real app to Azure Kubernetes Service: the network it lives in, the
-        machines it runs on, how it gets an identity, where its data goes, and the three different ways
-        traffic can reach it. Read top to bottom the first time; use the rail to jump back in later.
+        Docker first, exam prep last, nothing out of sequence in between. Every stage stands on the one
+        before it: you can't reason about a Service before you've built a Pod, and taints don't mean
+        anything until you understand scheduling. AKS is the concrete environment threaded through the
+        examples — but the curriculum itself is Kubernetes, full stop. Read top to bottom the first time;
+        use the rail to jump back in later.
       </p>
       <div class="byline">written for a junior programmer · reviewed the way a senior devops engineer would review a PR</div>
     </div>
 
-    <!-- 00 FOUNDATIONS -->
-    <section class="stage" id="foundations" data-stage="0">
+    <!-- 01 CONTAINERS & DOCKER -->
+    <section class="stage" id="containers-docker" data-stage="1">
       <div>
         <div class="stage-head">
           <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
           <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 00</span> foundation</div>
-            <h2>Resource group &amp; virtual network</h2>
-            <div class="sub">before any Kubernetes exists</div>
+            <div class="eyebrow"><span class="n">STAGE 01</span> foundations</div>
+            <h2>Containers &amp; Docker</h2>
+            <div class="sub">the unit everything else packages</div>
           </div>
         </div>
         <div class="stage-body">
-          <p class="lede">Every Azure resource you create — the cluster, the storage account, the public IP — has to live inside a <strong>resource group</strong>: a folder for billing, permissions, and cleanup. Delete the group, delete the whole environment.</p>
-          <p>AKS nodes are Azure VMs, and VMs need addresses, so the cluster needs a <strong>virtual network (VNet)</strong> and a subnet to launch into. The networking mode you choose here — <strong>kubenet</strong> (nodes get real IPs, pods get an overlay) or <strong>Azure CNI</strong> (pods get real, routable VNet IPs) — is a decision you make once. Changing it later usually means rebuilding the cluster.</p>
+          <p class="lede">A container bundles your app with everything it needs to run — runtime, libraries, config — into one image built from a Dockerfile. Unlike a VM it doesn't carry its own kernel; it shares the host's, which is why it starts in milliseconds instead of minutes.</p>
           <ul>
-            <li><strong>Resource group</strong> — the container everything below lives in.</li>
-            <li><strong>VNet + subnet</strong> — the private network the cluster's nodes attach to.</li>
-            <li><strong>CNI choice</strong> — determines how many IP addresses your subnet needs to reserve.</li>
+            <li><strong>Image</strong> — a read-only template built in layers, one per Dockerfile instruction.</li>
+            <li><strong>Container</strong> — a running instance of an image. Ephemeral by default: anything not in a volume disappears on restart.</li>
+            <li><strong>Registry</strong> — where images live (Docker Hub, Azure Container Registry). <code>docker push</code>/<code>pull</code> move them in and out.</li>
+            <li>Kubernetes doesn't run Docker directly — AKS nodes use <strong>containerd</strong>, the same OCI runtime Docker is built on. Your Dockerfile and images work unchanged.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>With Azure CNI, every pod eats a real IP from the subnet, not just every node. Undersize the subnet and you'll hit a wall at 40% cluster capacity, not 100%. Size for pods, not nodes.</div>
+          <div class="note"><span class="tag">Senior note</span>A small image ships faster and has a smaller attack surface. Multi-stage builds — compile in one stage, copy only the binary into a minimal final image — routinely cut image size by 10&times;.</div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
-        <pre><span class="c1"># resource group — everything else lives here</span>
-<span class="k">az</span> group create \
-  --name rg-myapp-prod \
-  --location westeurope
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">Dockerfile + terminal</div></div>
+        <pre><span class="c1"># build stage</span>
+<span class="k">FROM</span> golang:1.22 <span class="k">AS</span> build
+<span class="k">WORKDIR</span> /src
+<span class="k">COPY</span> . .
+<span class="k">RUN</span> go build -o /out/myapp
 
-<span class="c1"># network the nodes will launch into</span>
-<span class="k">az</span> network vnet create \
-  --resource-group rg-myapp-prod \
-  --name vnet-myapp \
-  --address-prefix 10.0.0.0/8 \
-  --subnet-name snet-aks \
-  --subnet-prefix 10.240.0.0/16</pre>
+<span class="c1"># final stage — nothing but the binary</span>
+<span class="k">FROM</span> gcr.io/distroless/base
+<span class="k">COPY</span> --from<span class="s">=build /out/myapp /myapp</span>
+<span class="k">ENTRYPOINT</span> [<span class="s">"/myapp"</span>]
+
+<span class="c1"># build, tag, push to ACR</span>
+<span class="k">docker</span> build -t myacr.azurecr.io/myapp:1.4.0 .
+<span class="k">docker</span> push myacr.azurecr.io/myapp:1.4.0</pre>
         <div class="diagram">
-          <div class="diagram-title">what nests inside what</div>
+          <div class="diagram-title">image lifecycle</div>
           <div class="nest">
             <div class="box-row">
-              <div class="box accent">Resource Group</div>
-              <span class="arrow">→</span>
-              <div class="box solid">Virtual Network</div>
-              <span class="arrow">→</span>
-              <div class="box solid">Subnet<small>where node NICs attach</small></div>
+              <div class="box">Dockerfile</div><span class="arrow">→</span>
+              <div class="box solid">Image</div><span class="arrow">→</span>
+              <div class="box accent">Registry<small>ACR</small></div><span class="arrow">→</span>
+              <div class="box solid">containerd<small>on the node</small></div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 01 CLUSTER & NODES -->
-    <section class="stage" id="cluster" data-stage="1">
+    <!-- 02 KUBERNETES BASICS -->
+    <section class="stage" id="k8s-basics" data-stage="2">
       <div>
         <div class="stage-head">
           <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
           <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 01</span> compute</div>
-            <h2>The cluster &amp; its nodes</h2>
-            <div class="sub">control plane + node pools</div>
+            <div class="eyebrow"><span class="n">STAGE 02</span> foundations</div>
+            <h2>Kubernetes basics</h2>
+            <div class="sub">what problem it actually solves</div>
           </div>
         </div>
         <div class="stage-body">
-          <p class="lede">An AKS cluster is really two separate things billed differently. The <strong>control plane</strong> — API server, scheduler, etcd — is managed and (mostly) free; you never see or patch it. The <strong>node pools</strong> are Azure VM scale sets you pay for, patch, and size.</p>
-          <p>A <strong>node</strong> is one VM running <code>kubelet</code> (talks to the control plane), <code>kube-proxy</code> (networking rules), and a container runtime (<code>containerd</code>). Every AKS cluster needs a <strong>system node pool</strong> for cluster-critical pods — CoreDNS, metrics-server — and should get at least one <strong>user node pool</strong> for your actual application.</p>
+          <p class="lede">Kubernetes keeps a declared number of containers running somewhere across a fleet of machines, restarts them when they die, and moves them when a machine fails — without anyone SSH-ing in to fix it by hand. You describe the desired state; controllers continuously drive the cluster toward it.</p>
           <ul>
-            <li><strong>System pool</strong> — keeps the cluster alive. Keep app workloads off it.</li>
-            <li><strong>User pool(s)</strong> — where your Deployments actually schedule; scale/size per workload.</li>
-            <li><strong>Cluster autoscaler</strong> — adds/removes nodes based on unschedulable pods.</li>
-            <li><strong>Availability zones</strong> — spread nodes across zones so one datacenter failure isn't an outage.</li>
+            <li><strong>Declarative, not imperative</strong> — you say "3 replicas of this image," never "start container A on node B."</li>
+            <li><strong>Reconciliation loop</strong> — controllers compare desired vs. actual state constantly and correct drift.</li>
+            <li><strong>Everything is an object</strong> — Pods, Services, Deployments are records in the API, persisted in etcd.</li>
+            <li>AKS manages the parts that make this promise possible (the control plane); you manage what you ask it to run.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A noisy pod on the system pool can starve CoreDNS of CPU and take down DNS resolution for the entire cluster. Taint the system pool (<code>CriticalAddonsOnly</code>) and give your app its own pool — it's cheap insurance.</div>
+          <div class="note"><span class="tag">Senior note</span>The mental shift that trips up people coming from VMs: you never "fix" a broken pod. You delete it and let the controller create a new, correct one. Debug the <em>spec</em>, not the individual pod.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">the loop</div></div>
+        <div class="diagram" style="border-top:none">
+          <div class="diagram-title">desired state vs. actual state</div>
+          <div class="nest">
+            <div class="box-row" style="margin-bottom:.6rem">
+              <div class="box accent">Desired: Deployment says replicas: 3</div>
+            </div>
+            <div class="box-row" style="margin-bottom:.6rem">
+              <span class="arrow">&#8595;</span><div class="box solid">Controller compares &amp; reconciles</div>
+            </div>
+            <div class="box-row">
+              <div class="box">pod</div><div class="box">pod</div><div class="box">pod</div>
+              <span class="arrow">&#8592; actual state, corrected on every loop</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 ARCHITECTURE -->
+    <section class="stage" id="architecture" data-stage="3">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 03</span> foundations</div>
+            <h2>Architecture</h2>
+            <div class="sub">control plane vs. data plane</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Every cluster splits into two halves. The <strong>control plane</strong> makes decisions: the API server (front door for every request), the scheduler (picks which node a pod lands on), controller-manager (runs the reconciliation loops), and etcd (the cluster's database). The <strong>data plane</strong> is where workloads run: nodes, each with kubelet, kube-proxy, and a container runtime.</p>
+          <ul>
+            <li><strong>API server</strong> — the only thing anything talks to, including kubectl and the other control-plane pieces.</li>
+            <li><strong>etcd</strong> — a distributed key-value store holding the entire cluster's state. Lose it, lose the cluster.</li>
+            <li><strong>kubelet</strong> — the node agent that starts/stops containers per the API server's instructions.</li>
+            <li>On AKS the control plane is Azure-managed and mostly invisible; you only operate node pools.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>On AKS the control plane is free and you never patch it — that's the actual value of a managed service. You're responsible for the data plane: node OS patching (largely automated), sizing, and what you schedule onto it.</div>
         </div>
       </div>
       <div class="panel">
         <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
-        <pre><span class="k">az</span> aks create \
-  --resource-group rg-myapp-prod \
-  --name aks-myapp-prod \
-  --vnet-subnet-id &lt;subnet-id&gt; \
-  --network-plugin azure \
-  --node-count 3 \
-  --node-vm-size Standard_D4s_v5 \
-  --zones 1 2 3 \
-  --enable-cluster-autoscaler \
-  --min-count 3 --max-count 6
-
-<span class="c1"># add a dedicated pool for the app</span>
-<span class="k">az</span> aks nodepool add \
-  --cluster-name aks-myapp-prod \
-  --resource-group rg-myapp-prod \
-  --name userpool \
-  --node-vm-size Standard_D4s_v5 \
-  --mode User</pre>
+        <pre><span class="k">kubectl</span> cluster-info
+<span class="k">kubectl</span> get nodes -o wide
+<span class="k">kubectl</span> get --raw <span class="s">/healthz</span>       <span class="c1"># is the API server up?</span>
+<span class="k">kubectl</span> get pods -n kube-system  <span class="c1"># control-plane helpers</span></pre>
         <div class="diagram">
-          <div class="diagram-title">cluster anatomy</div>
+          <div class="diagram-title">two planes</div>
           <div class="nest">
             <div class="box-row" style="margin-bottom:.5rem">
-              <div class="box accent">Control plane <small>managed by Azure</small></div>
+              <div class="box accent">Control plane<small>API server · scheduler · controller-manager · etcd</small></div>
             </div>
             <div class="box-row">
-              <div class="box solid">System pool<small>coredns · metrics-server</small></div>
-              <div class="box solid">User pool<small>your app's pods</small></div>
+              <div class="box solid">Node<small>kubelet · kube-proxy · containerd</small></div>
+              <div class="box solid">Node</div>
+              <div class="box solid">Node</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 02 NAMESPACES -->
-    <section class="stage" id="namespaces" data-stage="2">
+    <!-- 04 KUBECTL -->
+    <section class="stage" id="kubectl" data-stage="4">
       <div>
         <div class="stage-head">
           <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
           <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 02</span> isolation</div>
-            <h2>Namespaces</h2>
-            <div class="sub">a logical wall, not a security boundary</div>
+            <div class="eyebrow"><span class="n">STAGE 04</span> foundations</div>
+            <h2>kubectl</h2>
+            <div class="sub">the only tool you need for 90% of your day</div>
           </div>
         </div>
         <div class="stage-body">
-          <p class="lede">A namespace partitions one cluster into separate zones for names, quotas, and permissions. It does <em>not</em> isolate at the kernel or network level by default — a pod in <code>dev</code> can still reach a pod in <code>prod</code> unless a <code>NetworkPolicy</code> says otherwise.</p>
-          <p>Three ship built in: <code>default</code>, <code>kube-system</code> (cluster internals — leave it alone), and <code>kube-public</code>. Everything you create should get its own.</p>
+          <p class="lede">kubectl talks to the API server over HTTPS and turns your commands into API requests. Almost everything you do — read, create, edit, delete, debug — goes through it, so fluency here compounds fast.</p>
           <ul>
-            <li>One namespace per <strong>environment</strong> (or per team, or per app) — pick a convention and stick to it.</li>
-            <li><strong>ResourceQuota</strong> caps total CPU/memory a namespace can consume.</li>
-            <li><strong>RoleBinding</strong> scopes who can do what, per namespace.</li>
+            <li><code>get</code> / <code>describe</code> / <code>logs</code> / <code>exec</code> — your core debugging loop for reading state.</li>
+            <li><code>apply -f</code> — declarative: hands a YAML file to the API server and lets it diff against current state.</li>
+            <li><code>create</code> / <code>delete</code> — imperative, fine for scratch work, not for anything you want reproducible.</li>
+            <li><code>-o yaml</code> / <code>--dry-run=client -o yaml</code> — turn any live object, or any command, into starter YAML.</li>
           </ul>
-          <div class="note"><span class="tag">Senior note</span>A namespace stops your team from starving another team's CPU quota. It does nothing against a container escape or a misconfigured Service reaching across namespaces — that's <code>NetworkPolicy</code> and pod security, a different layer entirely.</div>
-          <div class="chips"><span class="chip">kubectl create namespace</span><span class="chip">ResourceQuota</span><span class="chip">LimitRange</span><span class="chip">RoleBinding</span></div>
+          <div class="note"><span class="tag">Senior note</span><code>kubectl explain &lt;resource&gt;.&lt;field&gt;</code> pulls docs straight from the cluster's own OpenAPI schema — faster than the web docs, and it never drifts from the version you're actually running.</div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">namespace.yaml</div></div>
-        <pre><span class="k">apiVersion</span>: v1
-<span class="k">kind</span>: Namespace
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp-prod
----
-<span class="k">apiVersion</span>: v1
-<span class="k">kind</span>: ResourceQuota
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp-quota
-  <span class="k">namespace</span>: myapp-prod
-<span class="k">spec</span>:
-  <span class="k">hard</span>:
-    <span class="k">requests.cpu</span>: <span class="s">"4"</span>
-    <span class="k">requests.memory</span>: <span class="s">8Gi</span>
-    <span class="k">limits.cpu</span>: <span class="s">"8"</span>
-    <span class="k">limits.memory</span>: <span class="s">16Gi</span></pre>
-        <div class="diagram">
-          <div class="diagram-title">one cluster, walled off</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box solid">ns: myapp-dev</div>
-              <div class="box solid">ns: myapp-prod</div>
-              <div class="box">ns: kube-system<small>don't touch</small></div>
-            </div>
-          </div>
-        </div>
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="k">kubectl</span> get pods -n myapp-prod -o wide
+<span class="k">kubectl</span> describe pod myapp-7d9f -n myapp-prod
+<span class="k">kubectl</span> logs -f myapp-7d9f -n myapp-prod
+<span class="k">kubectl</span> exec -it myapp-7d9f -n myapp-prod -- sh
+<span class="k">kubectl</span> explain deployment.spec.strategy
+<span class="k">kubectl</span> apply -f deployment.yaml --dry-run=client -o yaml</pre>
       </div>
     </section>
 
-    <!-- 03 PODS -->
-    <section class="stage" id="pods" data-stage="3">
+    <!-- 05 PODS -->
+    <section class="stage" id="pods" data-stage="5">
       <div>
         <div class="stage-head">
           <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
           <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 03</span> workload</div>
-            <h2>Pods &amp; workloads</h2>
+            <div class="eyebrow"><span class="n">STAGE 05</span> core objects</div>
+            <h2>Pods</h2>
             <div class="sub">the smallest thing you actually deploy</div>
           </div>
         </div>
         <div class="stage-body">
-          <p class="lede">A <strong>pod</strong> is one or more containers that share a network namespace (they talk over <code>localhost</code>) and can share storage volumes. It's the smallest unit Kubernetes schedules — but you will almost never create a bare Pod.</p>
-          <p>Instead you wrap pods in a controller that matches the shape of your workload:</p>
+          <p class="lede">A pod is one or more containers that share a network namespace (they talk over <code>localhost</code>) and can share storage volumes. It's the smallest unit Kubernetes schedules — and on its own, it's fragile: a bare pod that dies stays dead.</p>
           <ul>
-            <li><strong>Deployment</strong> — stateless, replaceable, rolling updates. Your default choice.</li>
-            <li><strong>StatefulSet</strong> — stable identity and storage per replica. Databases, brokers.</li>
-            <li><strong>DaemonSet</strong> — exactly one pod per node. Log shippers, node agents.</li>
-            <li><strong>Job / CronJob</strong> — run to completion, once or on a schedule.</li>
+            <li>Usually one container per pod; multi-container pods are for tightly coupled helpers (sidecars), not general composition.</li>
+            <li>Pods are mortal — nodes fail, pods get evicted, IPs churn. Nothing in production should be a bare pod.</li>
+            <li><strong>Init containers</strong> run to completion before the main container starts — good for "wait for the DB" setup.</li>
+            <li><code>kubectl run</code> is for scratch debugging only, never how you ship anything real.</li>
           </ul>
-          <p><strong>Resource requests</strong> tell the scheduler how much CPU/memory a pod needs to be placed on a node — and drive the cluster autoscaler. <strong>Limits</strong> cap what it can use. Skip requests and your pod is "BestEffort" — first in line to be evicted when a node runs low.</p>
-          <div class="note"><span class="tag">Senior note</span>Set memory limits close to real usage — an OOM-killed pod restarts cleanly. Be cautious with CPU limits: they cause invisible throttling under load that doesn't show up as an error, just as latency. Measure before you cap.</div>
+          <div class="note"><span class="tag">Senior note</span>If you find yourself <code>kubectl apply</code>-ing a bare Pod for anything but a one-off debug container, stop — you want a Deployment. Bare pods don't get rescheduled if the node dies.</div>
         </div>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">deployment.yaml</div></div>
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">pod.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Pod
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-debug
+<span class="k">spec</span>:
+  <span class="k">initContainers</span>:
+  - <span class="k">name</span>: wait-for-db
+    <span class="k">image</span>: busybox
+    <span class="k">command</span>: [<span class="s">sh</span>, <span class="s">-c</span>, <span class="s">until nc -z db 5432; do sleep 1; done</span>]
+  <span class="k">containers</span>:
+  - <span class="k">name</span>: myapp
+    <span class="k">image</span>: myacr.azurecr.io/myapp:1.4.0
+    <span class="k">ports</span>: [{ <span class="k">containerPort</span>: 8080 }]</pre>
+        <div class="diagram">
+          <div class="diagram-title">shared network + volumes</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box accent">Pod</div>
+              <div class="box solid">init: wait-for-db</div>
+              <div class="box solid">container: myapp</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 YAML -->
+    <section class="stage" id="yaml" data-stage="6">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 06</span> core objects</div>
+            <h2>YAML</h2>
+            <div class="sub">the syntax, not the concept</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Every Kubernetes object — from a Pod to a ClusterRoleBinding — follows the same shape: <code>apiVersion</code>, <code>kind</code>, <code>metadata</code>, <code>spec</code>. Learn that shape once and you can read any manifest, even for resources you've never used.</p>
+          <ul>
+            <li><strong>apiVersion</strong> — which API group/version defines this kind (<code>v1</code>, <code>apps/v1</code>, <code>networking.k8s.io/v1</code>...).</li>
+            <li><strong>kind</strong> — the resource type: Pod, Deployment, Service...</li>
+            <li><strong>metadata</strong> — name, namespace, labels, annotations. Identity and tags, not behavior.</li>
+            <li><strong>spec</strong> — the desired state you declare; <code>status</code> is filled in by the cluster, never written by hand.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span>Indentation is meaningful and it's spaces only. A stray tab is the single most common reason <code>kubectl apply</code> throws a parse error — run everything through <code>--dry-run=client</code> before you commit it.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">anatomy.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: apps/v1        <span class="c1"># which API defines "kind" below</span>
+<span class="k">kind</span>: Deployment           <span class="c1"># the resource type</span>
+<span class="k">metadata</span>:                 <span class="c1"># identity: name, namespace, labels</span>
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">labels</span>: { <span class="k">app</span>: myapp }
+<span class="k">spec</span>:                     <span class="c1"># desired state — you write this</span>
+  <span class="k">replicas</span>: 3
+<span class="c1"># status:                    ← cluster-managed, never hand-written</span></pre>
+      </div>
+    </section>
+
+    <!-- 07 DEPLOYMENTS & REPLICASETS -->
+    <section class="stage" id="deployments-replicasets" data-stage="7">
+      <div>
+        <div class="stage-head">
+          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STAGE 07</span> core objects</div>
+            <h2>Deployments &amp; ReplicaSets</h2>
+            <div class="sub">how pods actually stay alive</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">A Deployment doesn't manage pods directly — it manages a <strong>ReplicaSet</strong>, which manages the pods. You'll almost never touch a ReplicaSet by hand; it exists so the Deployment has something to swap out during a rolling update.</p>
+          <ul>
+            <li><strong>Deployment</strong> — declares desired replica count and pod template; owns the rollout strategy.</li>
+            <li><strong>ReplicaSet</strong> — keeps N pods matching a label selector running at all times.</li>
+            <li>A rolling update creates a new ReplicaSet and scales it up while scaling the old one down — that's zero-downtime deploys.</li>
+            <li><code>kubectl rollout undo</code> is instant because the previous ReplicaSet is still there, just scaled to zero.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><code>kubectl get replicasets</code> after a few deploys shows old, scaled-to-zero ReplicaSets sitting around — that's normal, it's what makes rollback instant. <code>revisionHistoryLimit</code> controls how many it keeps.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">deployment.yaml + terminal</div></div>
         <pre><span class="k">apiVersion</span>: apps/v1
 <span class="k">kind</span>: Deployment
 <span class="k">metadata</span>:
@@ -604,298 +738,28 @@
   <span class="k">namespace</span>: myapp-prod
 <span class="k">spec</span>:
   <span class="k">replicas</span>: 3
+  <span class="k">revisionHistoryLimit</span>: 5
+  <span class="k">selector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: myapp } }
   <span class="k">template</span>:
+    <span class="k">metadata</span>: { <span class="k">labels</span>: { <span class="k">app</span>: myapp } }
     <span class="k">spec</span>:
       <span class="k">containers</span>:
       - <span class="k">name</span>: myapp
-        <span class="k">image</span>: myacr.azurecr.io/myapp:1.4.0
-        <span class="k">resources</span>:
-          <span class="k">requests</span>: { <span class="k">cpu</span>: <span class="s">250m</span>, <span class="k">memory</span>: <span class="s">256Mi</span> }
-          <span class="k">limits</span>:   { <span class="k">memory</span>: <span class="s">512Mi</span> }
-        <span class="k">readinessProbe</span>:
-          <span class="k">httpGet</span>: { <span class="k">path</span>: /healthz, <span class="k">port</span>: 8080 }</pre>
+        <span class="k">image</span>: myacr.azurecr.io/myapp:1.5.0
+
+<span class="k">kubectl</span> rollout status deploy/myapp -n myapp-prod
+<span class="k">kubectl</span> rollout undo deploy/myapp -n myapp-prod</pre>
         <div class="diagram">
-          <div class="diagram-title">pod, unpacked</div>
+          <div class="diagram-title">who owns whom</div>
           <div class="nest">
             <div class="box-row">
-              <div class="box accent">Pod<small>shared network + volumes</small></div>
-              <div class="box solid">container: myapp</div>
-              <div class="box solid">container: sidecar<small>optional</small></div>
+              <div class="box accent">Deployment</div><span class="arrow">→</span>
+              <div class="box solid">ReplicaSet (new)</div><span class="arrow">→</span>
+              <div class="box solid">pod × 3</div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 04 MANAGED IDENTITY -->
-    <section class="stage" id="identity" data-stage="4">
-      <div>
-        <div class="stage-head">
-          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
-          <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 04</span> identity</div>
-            <h2>Managed identity</h2>
-            <div class="sub">no secrets baked into config maps, ever</div>
-          </div>
-        </div>
-        <div class="stage-body">
-          <p class="lede">Two identities operate at two different layers — don't conflate them.</p>
-          <p>The <strong>cluster's own managed identity</strong> is what AKS itself uses to talk to Azure: attaching disks, creating a Load Balancer, pulling images from ACR. You barely think about it; Azure sets it up when the cluster is created.</p>
-          <p><strong>Azure AD Workload Identity</strong> is the one you'll use constantly: it lets a specific pod — via its Kubernetes <code>ServiceAccount</code> — exchange a token for a real Azure AD identity, and from there call Key Vault, Storage, or SQL with no client secret anywhere in your YAML.</p>
-          <ul>
-            <li>Create a <strong>user-assigned managed identity</strong> in Azure.</li>
-            <li>Federate it to a Kubernetes <strong>ServiceAccount</strong> via OIDC — no secret changes hands.</li>
-            <li>Grant that identity a role (e.g. <em>Key Vault Secrets User</em>) on the target resource.</li>
-            <li>Your app's SDK picks up the token automatically — nothing app-side to manage.</li>
-          </ul>
-          <div class="note"><span class="tag">Senior note</span>If you inherit a cluster still using AAD Pod Identity, flag it — it's deprecated. Workload Identity (OIDC federation) has been the supported path since AKS 1.24 and is what Microsoft's docs assume now.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal + service-account.yaml</div></div>
-        <pre><span class="k">az</span> identity create -g rg-myapp-prod -n id-myapp
-
-<span class="k">az</span> identity federated-credential create \
-  --name myapp-fed \
-  --identity-name id-myapp \
-  --resource-group rg-myapp-prod \
-  --issuer &lt;aks-oidc-issuer-url&gt; \
-  --subject system:serviceaccount:myapp-prod:myapp-sa
-
-<span class="c1"># the pod-facing side</span>
-<span class="k">apiVersion</span>: v1
-<span class="k">kind</span>: ServiceAccount
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp-sa
-  <span class="k">namespace</span>: myapp-prod
-  <span class="k">annotations</span>:
-    <span class="k">azure.workload.identity/client-id</span>: <span class="s">&lt;identity-client-id&gt;</span></pre>
-        <div class="diagram">
-          <div class="diagram-title">token, not a secret</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box solid">Pod<small>ServiceAccount: myapp-sa</small></div>
-              <span class="arrow">→ oidc token →</span>
-              <div class="box accent">Azure AD</div>
-              <span class="arrow">→</span>
-              <div class="box solid">Key Vault / Storage</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 05 STORAGE -->
-    <section class="stage" id="storage" data-stage="5">
-      <div>
-        <div class="stage-head">
-          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
-          <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 05</span> state</div>
-            <h2>Azure storage</h2>
-            <div class="sub">pods are ephemeral by design</div>
-          </div>
-        </div>
-        <div class="stage-body">
-          <p class="lede">Anything a container writes to its own filesystem vanishes on restart. For anything that needs to survive, AKS ships three CSI drivers pre-installed, each suited to a different access pattern:</p>
-          <ul>
-            <li><strong>Azure Disk</strong> — block storage, <code>ReadWriteOnce</code> (one pod at a time). The default for a database's data directory.</li>
-            <li><strong>Azure Files</strong> — an SMB/NFS share, <code>ReadWriteMany</code> (many pods at once). Shared config, uploads.</li>
-            <li><strong>Azure Blob</strong> — object storage, mounted via CSI or called directly from app code. Large unstructured data, backups.</li>
-          </ul>
-          <p>The flow is always: <strong>StorageClass</strong> (how to provision) → <strong>PersistentVolumeClaim</strong> (a pod's request for storage) → <strong>Pod</strong> (mounts the claim as a volume).</p>
-          <div class="note"><span class="tag">Senior note</span>Disk-backed volumes are zone-bound. If your node pool spans zones but the disk was provisioned in only one, a rescheduled pod can get stuck <code>Pending</code> waiting for a node in the disk's zone. Match your StorageClass's <code>allowedTopologies</code> to your node pool's zones.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">storage.yaml</div></div>
-        <pre><span class="k">apiVersion</span>: storage.k8s.io/v1
-<span class="k">kind</span>: StorageClass
-<span class="k">metadata</span>:
-  <span class="k">name</span>: managed-premium-zrs
-<span class="k">provisioner</span>: disk.csi.azure.com
-<span class="k">parameters</span>:
-  <span class="k">skuName</span>: PremiumV2_ZRS
----
-<span class="k">apiVersion</span>: v1
-<span class="k">kind</span>: PersistentVolumeClaim
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp-data
-  <span class="k">namespace</span>: myapp-prod
-<span class="k">spec</span>:
-  <span class="k">storageClassName</span>: managed-premium-zrs
-  <span class="k">accessModes</span>: [<span class="s">ReadWriteOnce</span>]
-  <span class="k">resources</span>:
-    <span class="k">requests</span>: { <span class="k">storage</span>: <span class="s">20Gi</span> }</pre>
-        <div class="diagram">
-          <div class="diagram-title">claim chain</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box solid">StorageClass</div><span class="arrow">→</span>
-              <div class="box solid">PVC</div><span class="arrow">→</span>
-              <div class="box accent">Pod volume mount</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 06 SERVICES / LB -->
-    <section class="stage" id="loadbalancing" data-stage="6">
-      <div>
-        <div class="stage-head">
-          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
-          <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 06</span> traffic in · layer 4</div>
-            <h2>Services &amp; load balancing</h2>
-            <div class="sub">a stable address for a shifting set of pods</div>
-          </div>
-        </div>
-        <div class="stage-body">
-          <p class="lede">Pods die and get replaced with new IPs constantly. A <strong>Service</strong> gives them one stable address regardless of which pods are behind it at any moment.</p>
-          <ul>
-            <li><strong>ClusterIP</strong> (default) — reachable only inside the cluster. Most services should be this.</li>
-            <li><strong>NodePort</strong> — opens a port on every node. Rarely used directly.</li>
-            <li><strong>LoadBalancer</strong> — provisions an actual Azure Standard Load Balancer with a public (or, via annotation, private) IP.</li>
-          </ul>
-          <p>This is <strong>Layer 4</strong>: it balances TCP/UDP connections across nodes with zero awareness of HTTP paths, hostnames, or headers. For that, you need Ingress or Gateway API — next.</p>
-          <div class="note"><span class="tag">Senior note</span>Every <code>type: LoadBalancer</code> Service provisions its own Azure Load Balancer and its own public IP. Fine for one or two entry points; expensive and hard to manage once you have ten services to expose. That's exactly the problem Ingress solves.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">service.yaml</div></div>
-        <pre><span class="k">apiVersion</span>: v1
-<span class="k">kind</span>: Service
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp
-  <span class="k">namespace</span>: myapp-prod
-  <span class="k">annotations</span>:
-    <span class="c1"># drop this line for a public IP instead</span>
-    <span class="k">service.beta.kubernetes.io/azure-load-balancer-internal</span>: <span class="s">"true"</span>
-<span class="k">spec</span>:
-  <span class="k">type</span>: LoadBalancer
-  <span class="k">selector</span>: { <span class="k">app</span>: myapp }
-  <span class="k">ports</span>:
-  - { <span class="k">port</span>: 443, <span class="k">targetPort</span>: 8080 }</pre>
-        <div class="diagram">
-          <div class="diagram-title">l4 — connection level</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box accent">Azure Load Balancer</div><span class="arrow">→</span>
-              <div class="box solid">Service<small>ClusterIP</small></div><span class="arrow">→</span>
-              <div class="box solid">Pod</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 07 INGRESS -->
-    <section class="stage" id="ingress" data-stage="7">
-      <div>
-        <div class="stage-head">
-          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
-          <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 07</span> traffic in · layer 7</div>
-            <h2>Ingress</h2>
-            <div class="sub">one IP, routed by hostname and path</div>
-          </div>
-        </div>
-        <div class="stage-body">
-          <p class="lede">Ingress operates at <strong>Layer 7</strong>: one public IP in front of the cluster, routing by hostname and URL path, terminating TLS in a single place instead of per-service.</p>
-          <p>Two common controllers on AKS:</p>
-          <ul>
-            <li><strong>NGINX Ingress Controller</strong> — open source, installed via Helm, the default choice for most teams.</li>
-            <li><strong>Application Gateway Ingress Controller (AGIC)</strong> — routes through a real Azure Application Gateway, brings a managed WAF.</li>
-          </ul>
-          <p>An Ingress resource is just routing rules; something still has to run the controller that reads them and configures a real proxy.</p>
-          <div class="note"><span class="tag">Senior note</span>The Ingress API is stable but frozen — it can't cleanly express weighted traffic splitting or cross-namespace routing. That gap is exactly why Gateway API exists. Don't fight Ingress into doing something it wasn't built for.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">ingress.yaml</div></div>
-        <pre><span class="k">apiVersion</span>: networking.k8s.io/v1
-<span class="k">kind</span>: Ingress
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp
-  <span class="k">namespace</span>: myapp-prod
-  <span class="k">annotations</span>:
-    <span class="k">cert-manager.io/cluster-issuer</span>: <span class="s">letsencrypt</span>
-<span class="k">spec</span>:
-  <span class="k">ingressClassName</span>: nginx
-  <span class="k">tls</span>:
-  - { <span class="k">hosts</span>: [<span class="s">app.example.com</span>], <span class="k">secretName</span>: myapp-tls }
-  <span class="k">rules</span>:
-  - <span class="k">host</span>: app.example.com
-    <span class="k">http</span>:
-      <span class="k">paths</span>:
-      - <span class="k">path</span>: /
-        <span class="k">pathType</span>: Prefix
-        <span class="k">backend</span>:
-          <span class="k">service</span>: { <span class="k">name</span>: myapp, <span class="k">port</span>: { <span class="k">number</span>: 443 } }</pre>
-        <div class="diagram">
-          <div class="diagram-title">l7 — routed by host/path</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box accent">NGINX / AGIC</div><span class="arrow">→</span>
-              <div class="box solid">Service A</div>
-              <div class="box solid">Service B</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 08 GATEWAY API -->
-    <section class="stage" id="gateway" data-stage="8">
-      <div>
-        <div class="stage-head">
-          <button class="stage-check" aria-pressed="false" aria-label="Mark stage learned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></button>
-          <div class="stage-copy">
-            <div class="eyebrow"><span class="n">STAGE 08</span> traffic in · next gen</div>
-            <h2>Gateway API</h2>
-            <div class="sub">Ingress, split by who owns what</div>
-          </div>
-        </div>
-        <div class="stage-body">
-          <p class="lede">Gateway API is Ingress's successor, and it fixes the ownership problem by splitting one YAML file into role-shaped resources:</p>
-          <ul>
-            <li><strong>GatewayClass</strong> — a class of gateway implementation. Owned by whoever manages the cluster.</li>
-            <li><strong>Gateway</strong> — an actual listener and IP. Owned by the platform team.</li>
-            <li><strong>HTTPRoute</strong> — routing rules for one app. Owned by the app team, and can live in the app's own namespace.</li>
-          </ul>
-          <p>Azure's managed implementation is <strong>Application Gateway for Containers (AGC)</strong>. The practical win: app teams ship their own routing changes without ever touching the shared Gateway resource or filing a ticket with platform.</p>
-          <div class="note"><span class="tag">Senior note</span>Don't migrate a working Ingress setup just to be on the newer thing. Reach for Gateway API when you actually need what it offers — weighted/canary routing, or routes that app teams own directly in their own namespace.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">gateway.yaml + httproute.yaml</div></div>
-        <pre><span class="k">apiVersion</span>: gateway.networking.k8s.io/v1
-<span class="k">kind</span>: Gateway
-<span class="k">metadata</span>:
-  <span class="k">name</span>: shared-gw
-  <span class="k">namespace</span>: platform
-<span class="k">spec</span>:
-  <span class="k">gatewayClassName</span>: azure-alb-external
-  <span class="k">listeners</span>:
-  - { <span class="k">name</span>: https, <span class="k">port</span>: 443, <span class="k">protocol</span>: HTTPS }
----
-<span class="k">apiVersion</span>: gateway.networking.k8s.io/v1
-<span class="k">kind</span>: HTTPRoute
-<span class="k">metadata</span>:
-  <span class="k">name</span>: myapp-route
-  <span class="k">namespace</span>: myapp-prod
-<span class="k">spec</span>:
-  <span class="k">parentRefs</span>: [{ <span class="k">name</span>: shared-gw, <span class="k">namespace</span>: platform }]
-  <span class="k">hostnames</span>: [<span class="s">app.example.com</span>]
-  <span class="k">rules</span>:
-  - <span class="k">backendRefs</span>: [{ <span class="k">name</span>: myapp, <span class="k">port</span>: 443 }]</pre>
-        <div class="diagram">
-          <div class="diagram-title">split by ownership</div>
-          <div class="nest">
-            <div class="box-row">
-              <div class="box accent">Gateway<small>platform team</small></div><span class="arrow">←</span>
-              <div class="box solid">HTTPRoute<small>app team, own ns</small></div>
+            <div class="box-row" style="margin-top:.5rem">
+              <span class="arrow" style="visibility:hidden">→</span>
+              <div class="box">ReplicaSet (old)<small>scaled to 0</small></div>
             </div>
           </div>
         </div>
