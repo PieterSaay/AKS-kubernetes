@@ -1849,6 +1849,258 @@
       </div>
     </section>
 
+    <!-- WORKED EXAMPLE: AZURE DEVOPS -->
+    <div class="walk-intro" id="worked-example">
+      <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">WORKED EXAMPLE</span> shipping a real stack</div>
+      <h2>.NET API + React UI + SQL MI, deployed to AKS via Azure DevOps</h2>
+      <p>Everything above is a component. This is what it looks like assembled into one deployment: a containerized ASP.NET Core API and a containerized React UI, both running in AKS behind one Ingress; a React frontend that never talks to Azure directly, only to its own API over a relative path; an API that authenticates to Azure SQL Managed Instance and Blob Storage with zero passwords, using the workload identity from stage 20; and an Azure DevOps pipeline that builds, containerizes, and deploys both apps on every push.</p>
+      <div class="stack-chips">
+        <span class="chip">ASP.NET Core API</span><span class="chip">React UI</span><span class="chip">Azure SQL MI</span>
+        <span class="chip">Azure Storage (Blob)</span><span class="chip">Workload Identity</span><span class="chip">AKS Ingress</span>
+        <span class="chip">Azure Container Registry</span><span class="chip">Azure Pipelines</span>
+      </div>
+
+      <div class="bp-frame">
+        <div class="diagram-title">rg-myapp-prod · aks-myapp-prod · ns: myapp-prod</div>
+        <div class="flow" style="margin-top:0;padding-top:0;border-top:none;">
+          <div class="box solid">browser</div><span class="arrow">→</span>
+          <div class="box accent">Ingress<small>/ → web-svc · /api → api-svc</small></div>
+        </div>
+        <div class="bp-grid" style="grid-template-columns:1fr 1fr;margin-top:1rem;">
+          <div class="bp-card">
+            <h4>react ui</h4>
+            <div class="box-row">
+              <div class="box solid">web-svc<small>ClusterIP</small></div><span class="arrow">→</span>
+              <div class="box solid">web Deployment<small>nginx + static build</small></div>
+            </div>
+          </div>
+          <div class="bp-card">
+            <h4>.net api</h4>
+            <div class="box-row">
+              <div class="box solid">api-svc<small>ClusterIP</small></div><span class="arrow">→</span>
+              <div class="box accent">api Deployment<small>ServiceAccount: myapp-sa</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="flow">
+          <div class="box accent">api pod<small>workload identity token</small></div><span class="arrow">→</span>
+          <div class="box solid">Azure SQL Managed Instance<small>Active Directory Workload Identity auth</small></div>
+          <div class="box solid">Storage Account<small>Blob, same identity, RBAC</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="walk" id="walk-provision">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">01</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 01</span> provision</div>
+            <h2>Provision the Azure foundation</h2>
+            <div class="sub">kick off SQL MI first — it's the long pole</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Reusing what earlier stages already stood up: the <code>aks-myapp-prod</code> cluster, the <code>id-myapp</code> managed identity, and the <code>myacr.azurecr.io</code> registry. Three things are new for this stack.</p>
+          <ul>
+            <li>Turn on <strong>workload identity</strong> on the cluster if stage 20 didn't already (one-time, non-disruptive).</li>
+            <li>A <strong>Storage account</strong> for blob uploads.</li>
+            <li><strong>Azure SQL Managed Instance</strong> — a PaaS service that lives in its own delegated subnet of the same VNet, <em>not</em> a workload running inside the cluster. First-time provisioning takes 4–6 hours; start it before anything else.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>SQL MI needs a dedicated, otherwise-empty subnet with route tables and NSG rules that Azure manages for you — don't try to squeeze it into the AKS node subnet. Peer or share the VNet, but give it its own subnet.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">terminal</div></div>
+        <pre><span class="c1"># one-time: enable workload identity on an existing cluster</span>
+<span class="k">az</span> aks update -g rg-myapp-prod -n aks-myapp-prod \
+  --enable-oidc-issuer --enable-workload-identity
+
+<span class="c1"># storage account for blob uploads</span>
+<span class="k">az</span> storage account create -g rg-myapp-prod -n stmyappprod \
+  --sku Standard_LRS --min-tls-version TLS1_2
+
+<span class="c1"># SQL MI — kick this off first, then go do everything else</span>
+<span class="k">az</span> sql mi create -g rg-myapp-prod -n sqlmi-myapp-prod \
+  --subnet &lt;sql-mi-subnet-id&gt; --vnet-name vnet-myapp \
+  --capacity 4 --edition GeneralPurpose \
+  --admin-user sqladmin --admin-password &lt;temp, rotate to AAD-only&gt;</pre>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="walk" id="walk-api-image">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">02</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 02</span> containerize</div>
+            <h2>Containerize the .NET API</h2>
+            <div class="sub">standard multi-stage build — nothing AKS-specific yet</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">SDK image to publish, ASP.NET runtime image to run — the same image you'd build for any container host. The Azure-specific pieces come later, entirely in configuration and identity, not in the Dockerfile.</p>
+          <ul>
+            <li>Publish in <code>Release</code> config; copy only the publish output into the runtime stage.</li>
+            <li>Listen on <code>8080</code> — a non-root, unprivileged port, since the container shouldn't run as root either.</li>
+            <li>No SQL password anywhere in config. With workload identity there's nothing to store — see step 5.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>Because auth to SQL MI is via workload identity, the connection string ends up with zero secrets in it — no password to rotate, no Kubernetes Secret to manage for the database credential at all.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">api/Dockerfile</div></div>
+        <pre><span class="k">FROM</span> mcr.microsoft.com/dotnet/sdk:8.0 <span class="k">AS</span> build
+<span class="k">WORKDIR</span> /src
+<span class="k">COPY</span> . .
+<span class="k">RUN</span> dotnet publish MyApp.Api -c Release -o /out
+
+<span class="k">FROM</span> mcr.microsoft.com/dotnet/aspnet:8.0
+<span class="k">WORKDIR</span> /app
+<span class="k">COPY</span> --from<span class="s">=build /out .</span>
+<span class="k">ENV</span> ASPNETCORE_URLS=http://+:8080
+<span class="k">EXPOSE</span> 8080
+<span class="k">USER</span> app
+<span class="k">ENTRYPOINT</span> [<span class="s">"dotnet"</span>, <span class="s">"MyApp.Api.dll"</span>]</pre>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="walk" id="walk-web-image">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">03</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 03</span> containerize</div>
+            <h2>Containerize the React UI</h2>
+            <div class="sub">same-origin calls, so the image never needs to know a hostname</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Build stage compiles the static bundle; runtime stage is just nginx serving it. The UI calls its API at a relative path (<code>/api/...</code>) — the Ingress does the routing, so the exact same image works unmodified in dev, staging, and prod.</p>
+          <ul>
+            <li>Multi-stage build: <code>node</code> to build, <code>nginx</code> to serve — the shipped image has no Node.js, no source, no <code>node_modules</code>.</li>
+            <li>nginx needs an SPA fallback (<code>try_files ... /index.html</code>) so client-side routes survive a hard refresh.</li>
+            <li>REST calls from the UI go to <code>/api/...</code>, resolved against whatever host the browser is already on.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>Don't bake an API base URL into the React build with a build-time env var — that ties one image to one environment, and you're back to rebuilding per environment (stage 01's whole point). Same-origin relative calls through Ingress path routing avoid the problem entirely.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">web/Dockerfile + nginx.conf</div></div>
+        <pre><span class="k">FROM</span> node:20-alpine <span class="k">AS</span> build
+<span class="k">WORKDIR</span> /app
+<span class="k">COPY</span> package*.json ./
+<span class="k">RUN</span> npm ci
+<span class="k">COPY</span> . .
+<span class="k">RUN</span> npm run build
+
+<span class="k">FROM</span> nginx:1.27-alpine
+<span class="k">COPY</span> --from<span class="s">=build /app/dist /usr/share/nginx/html</span>
+<span class="k">COPY</span> nginx.conf /etc/nginx/conf.d/default.conf
+<span class="k">EXPOSE</span> 80
+
+<span class="c1"># nginx.conf — the one line that matters:</span>
+<span class="c1"># location / { try_files $uri /index.html; }</span></pre>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="walk" id="walk-manifests">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">04</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 04</span> kubernetes manifests</div>
+            <h2>Wire it together in the cluster</h2>
+            <div class="sub">one ServiceAccount, two Deployments, one Ingress</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">The <code>api</code> pod carries the workload identity; the <code>web</code> pod doesn't need any Azure identity at all — it never calls Azure directly.</p>
+          <ul>
+            <li>The ServiceAccount gets the <code>client-id</code> <strong>annotation</strong>; the api pod's <em>template</em> gets the <code>azure.workload.identity/use: "true"</code> <strong>label</strong> — both are required, on two different objects, and it's the one thing everyone forgets.</li>
+            <li>Ingress splits on path: <code>/api</code> to the API, <code>/</code> to everything else. List the specific path first for readability, even though NGINX ingress sorts by specificity regardless of order.</li>
+            <li>Both Deployments get real readiness probes (stage 12) and requests/limits (stage 18) — this is a "real project" example, not a toy.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>If tokens aren't showing up in the api pod (<code>AZURE_CLIENT_ID</code> env var missing), it's almost always this pairing: the label's on the wrong object, or the ServiceAccount name in the Deployment doesn't match the one that's annotated.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">k8s/myapp.yaml</div></div>
+        <pre><span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: ServiceAccount
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp-sa
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>:
+    <span class="k">azure.workload.identity/client-id</span>: <span class="s">&lt;id-myapp-client-id&gt;</span>
+---
+<span class="k">apiVersion</span>: apps/v1
+<span class="k">kind</span>: Deployment
+<span class="k">metadata</span>: { <span class="k">name</span>: api, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">replicas</span>: 3
+  <span class="k">selector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: api } }
+  <span class="k">template</span>:
+    <span class="k">metadata</span>:
+      <span class="k">labels</span>: { <span class="k">app</span>: api, <span class="k">azure.workload.identity/use</span>: <span class="s">"true"</span> }
+    <span class="k">spec</span>:
+      <span class="k">serviceAccountName</span>: myapp-sa
+      <span class="k">containers</span>:
+      - <span class="k">name</span>: api
+        <span class="k">image</span>: myacr.azurecr.io/myapp-api:1.0.0
+        <span class="k">ports</span>: [{ <span class="k">containerPort</span>: 8080 }]
+        <span class="k">envFrom</span>: [{ <span class="k">configMapRef</span>: { <span class="k">name</span>: api-config } }]
+        <span class="k">resources</span>:
+          <span class="k">requests</span>: { <span class="k">cpu</span>: <span class="s">250m</span>, <span class="k">memory</span>: <span class="s">256Mi</span> }
+          <span class="k">limits</span>:   { <span class="k">memory</span>: <span class="s">512Mi</span> }
+        <span class="k">readinessProbe</span>: { <span class="k">httpGet</span>: { <span class="k">path</span>: /healthz, <span class="k">port</span>: 8080 } }
+---
+<span class="k">apiVersion</span>: apps/v1
+<span class="k">kind</span>: Deployment
+<span class="k">metadata</span>: { <span class="k">name</span>: web, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>:
+  <span class="k">replicas</span>: 2
+  <span class="k">selector</span>: { <span class="k">matchLabels</span>: { <span class="k">app</span>: web } }
+  <span class="k">template</span>:
+    <span class="k">metadata</span>: { <span class="k">labels</span>: { <span class="k">app</span>: web } }
+    <span class="k">spec</span>:
+      <span class="k">containers</span>:
+      - <span class="k">name</span>: web
+        <span class="k">image</span>: myacr.azurecr.io/myapp-web:1.0.0
+        <span class="k">ports</span>: [{ <span class="k">containerPort</span>: 80 }]
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Service
+<span class="k">metadata</span>: { <span class="k">name</span>: api-svc, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>: { <span class="k">selector</span>: { <span class="k">app</span>: api }, <span class="k">ports</span>: [{ <span class="k">port</span>: 80, <span class="k">targetPort</span>: 8080 }] }
+---
+<span class="k">apiVersion</span>: v1
+<span class="k">kind</span>: Service
+<span class="k">metadata</span>: { <span class="k">name</span>: web-svc, <span class="k">namespace</span>: myapp-prod }
+<span class="k">spec</span>: { <span class="k">selector</span>: { <span class="k">app</span>: web }, <span class="k">ports</span>: [{ <span class="k">port</span>: 80, <span class="k">targetPort</span>: 80 }] }
+---
+<span class="k">apiVersion</span>: networking.k8s.io/v1
+<span class="k">kind</span>: Ingress
+<span class="k">metadata</span>:
+  <span class="k">name</span>: myapp
+  <span class="k">namespace</span>: myapp-prod
+  <span class="k">annotations</span>: { <span class="k">cert-manager.io/cluster-issuer</span>: <span class="s">letsencrypt</span> }
+<span class="k">spec</span>:
+  <span class="k">ingressClassName</span>: nginx
+  <span class="k">tls</span>: [{ <span class="k">hosts</span>: [<span class="s">app.example.com</span>], <span class="k">secretName</span>: myapp-tls }]
+  <span class="k">rules</span>:
+  - <span class="k">host</span>: app.example.com
+    <span class="k">http</span>:
+      <span class="k">paths</span>:
+      - { <span class="k">path</span>: /api, <span class="k">pathType</span>: Prefix, <span class="k">backend</span>: { <span class="k">service</span>: { <span class="k">name</span>: api-svc, <span class="k">port</span>: { <span class="k">number</span>: 80 } } } }
+      - { <span class="k">path</span>: /,    <span class="k">pathType</span>: Prefix, <span class="k">backend</span>: { <span class="k">service</span>: { <span class="k">name</span>: web-svc, <span class="k">port</span>: { <span class="k">number</span>: 80 } } } }</pre>
+      </div>
+    </section>
+
     <!-- CHEAT SHEET -->
     <section class="cheat" id="cheatsheet">
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">REFERENCE</span> cheat sheet</div>
