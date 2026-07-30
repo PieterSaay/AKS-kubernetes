@@ -2101,6 +2101,213 @@
       </div>
     </section>
 
+    <!-- STEP 5 -->
+    <section class="walk" id="walk-grant-access">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">05</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 05</span> identity</div>
+            <h2>Grant the identity access to SQL MI and Storage</h2>
+            <div class="sub">a token is useless until something trusts it</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Workload identity gets the api pod a valid Azure AD token. Two more things make that token actually useful: SQL MI needs a database user mapped to the identity, and Storage needs an RBAC role assignment.</p>
+          <ul>
+            <li>Inside <code>myappdb</code>, create a contained database user for the identity — same T-SQL you'd run for a human account.</li>
+            <li>On the storage account, assign <strong>Storage Blob Data Contributor</strong> scoped to just that one account — not the subscription, not the resource group.</li>
+            <li>Neither grant requires the app to know, store, or rotate a password. Ever.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>The database-level <code>CREATE USER</code> is a database object, not infrastructure — check it into the same migration scripts as your tables. Otherwise it's the one thing that's always slightly out of sync between dev and prod.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">grant.sql + terminal + Program.cs</div></div>
+        <pre><span class="c1">-- run once against myappdb, via a migration</span>
+<span class="k">CREATE USER</span> [id-myapp] <span class="k">FROM EXTERNAL PROVIDER</span>;
+<span class="k">ALTER ROLE</span> db_datareader <span class="k">ADD MEMBER</span> [id-myapp];
+<span class="k">ALTER ROLE</span> db_datawriter <span class="k">ADD MEMBER</span> [id-myapp];
+
+<span class="c1"># storage: least-privilege, scoped to one account</span>
+<span class="k">az</span> role assignment create \
+  --assignee &lt;id-myapp-client-id&gt; \
+  --role <span class="s">"Storage Blob Data Contributor"</span> \
+  --scope &lt;stmyappprod-resource-id&gt;
+
+<span class="c1">// api: no password anywhere in this string</span>
+<span class="k">var</span> connStr = $<span class="s">"Server=tcp:{cfg["Sql:Server"]};Database={cfg["Sql:Database"]};"</span> +
+             $<span class="s">"Authentication=Active Directory Workload Identity;"</span> +
+             $<span class="s">"User Id={Environment.GetEnvironmentVariable("AZURE_CLIENT_ID")};Encrypt=True;"</span>;
+
+<span class="k">var</span> blobs = <span class="k">new</span> BlobServiceClient(<span class="k">new</span> Uri(cfg[<span class="s">"Storage:AccountUrl"</span>]), <span class="k">new</span> DefaultAzureCredential());</pre>
+      </div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="walk" id="walk-devops-setup">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">06</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 06</span> azure devops</div>
+            <h2>Wire up Azure DevOps</h2>
+            <div class="sub">two connections and a variable group, before any pipeline YAML</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">Set these up once in Project Settings before writing <code>azure-pipelines.yml</code> — the pipeline just references them by name.</p>
+          <ul>
+            <li>An <strong>Azure Resource Manager</strong> service connection scoped to <code>rg-myapp-prod</code>, used for every <code>az</code> CLI task (ACR build, AKS credentials).</li>
+            <li>A <strong>variable group</strong> (Library → Variable groups) holding the non-secret bits: registry name, cluster name, resource group — referenced in the pipeline as <code>$(acrName)</code> etc.</li>
+            <li>An Azure DevOps <strong>environment</strong> named <code>aks-myapp-prod</code>, with a required-approval check — this is what gates the deploy stage in step 08.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>When creating the ARM service connection, pick "Workload identity federation" instead of the classic secret-based option. Same benefit as stage 20 — Azure DevOps authenticates without a stored client secret to rotate or leak.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">one-time setup</div></div>
+        <div class="diagram" style="border-top:none">
+          <div class="diagram-title">what the pipeline will reference</div>
+          <div class="nest">
+            <div class="box-row" style="margin-bottom:.5rem">
+              <div class="box accent">myapp-arm-connection<small>service connection, workload identity federated</small></div>
+            </div>
+            <div class="box-row" style="margin-bottom:.5rem">
+              <div class="box solid">myapp-pipeline-vars<small>variable group</small></div>
+            </div>
+            <div class="box-row">
+              <div class="box solid">aks-myapp-prod<small>environment, approval gate</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="walk" id="walk-pipeline-build">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">07</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 07</span> pipeline</div>
+            <h2>Build, test, and containerize both apps</h2>
+            <div class="sub">two jobs in parallel, one image each, tagged with the build ID</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">One <code>azure-pipelines.yml</code> at the repo root; shown here in two pieces. This first stage runs the tests for each app, then builds and pushes its image — using <code>az acr build</code> so the image is built inside ACR itself, no Docker daemon needed on the agent.</p>
+          <ul>
+            <li>Both jobs run in parallel by default — different apps, no dependency between them at this stage.</li>
+            <li>Tag every image with <code>$(Build.BuildId)</code>, never <code>latest</code> — same rule as stage 22's Helm recommendation, same reason.</li>
+            <li><code>az acr build</code> builds and pushes in one step — one less credential (a registry login) for the pipeline to hold.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>Run the test task <em>before</em> the ACR build task in each job. A pipeline that pushes an image before its tests have passed has already lost the point of having tests in CI.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">azure-pipelines.yml — build stage</div></div>
+        <pre><span class="k">trigger</span>: { <span class="k">branches</span>: { <span class="k">include</span>: [main] } }
+
+<span class="k">variables</span>:
+- <span class="k">group</span>: myapp-pipeline-vars   <span class="c1"># acrName, aksName, resourceGroup</span>
+
+<span class="k">stages</span>:
+- <span class="k">stage</span>: Build
+  <span class="k">jobs</span>:
+  - <span class="k">job</span>: Api
+    <span class="k">pool</span>: { <span class="k">vmImage</span>: ubuntu-latest }
+    <span class="k">steps</span>:
+    - <span class="k">task</span>: UseDotNet@2
+      <span class="k">inputs</span>: { <span class="k">version</span>: <span class="s">'8.0.x'</span> }
+    - <span class="k">script</span>: dotnet test ./api/MyApp.Api.Tests
+    - <span class="k">task</span>: AzureCLI@2
+      <span class="k">inputs</span>:
+        <span class="k">azureSubscription</span>: myapp-arm-connection
+        <span class="k">scriptType</span>: bash
+        <span class="k">scriptLocation</span>: inlineScript
+        <span class="k">inlineScript</span>: |
+          az acr build --registry $(acrName) \
+            --image myapp-api:$(Build.BuildId) \
+            --file api/Dockerfile ./api
+
+  - <span class="k">job</span>: Web
+    <span class="k">pool</span>: { <span class="k">vmImage</span>: ubuntu-latest }
+    <span class="k">steps</span>:
+    - <span class="k">task</span>: NodeTool@0
+      <span class="k">inputs</span>: { <span class="k">versionSpec</span>: <span class="s">'20.x'</span> }
+    - <span class="k">script</span>: npm ci &amp;&amp; npm test -- --watchAll=false
+      <span class="k">workingDirectory</span>: web
+    - <span class="k">task</span>: AzureCLI@2
+      <span class="k">inputs</span>:
+        <span class="k">azureSubscription</span>: myapp-arm-connection
+        <span class="k">scriptType</span>: bash
+        <span class="k">scriptLocation</span>: inlineScript
+        <span class="k">inlineScript</span>: |
+          az acr build --registry $(acrName) \
+            --image myapp-web:$(Build.BuildId) \
+            --file web/Dockerfile ./web</pre>
+      </div>
+    </section>
+
+    <!-- STEP 8 -->
+    <section class="walk" id="walk-pipeline-deploy">
+      <div>
+        <div class="stage-head">
+          <div class="step-badge">08</div>
+          <div class="stage-copy">
+            <div class="eyebrow"><span class="n">STEP 08</span> pipeline</div>
+            <h2>Deploy to AKS, then verify</h2>
+            <div class="sub">gated by an approval, rolled out with a timeout, checked before you walk away</div>
+          </div>
+        </div>
+        <div class="stage-body">
+          <p class="lede">The deploy stage only runs after Build succeeds, and only proceeds once someone approves the <code>aks-myapp-prod</code> environment from step 06. It swaps in the new image tags and waits for the rollout to actually finish before declaring success.</p>
+          <ul>
+            <li><code>kubectl set image</code> is enough here since the manifests already exist in the cluster from step 04 — this pipeline is updating image tags, not reapplying the whole file.</li>
+            <li><code>kubectl rollout status ... --timeout</code> makes the pipeline fail loudly if the rollout stalls, instead of reporting green while pods sit in <code>CrashLoopBackOff</code>.</li>
+            <li>Rollback is <code>kubectl rollout undo</code> against the live Deployment, or re-running a previous pipeline run — both work; pick one as your team's default so it's not decided during an incident.</li>
+          </ul>
+          <div class="note"><span class="tag">Senior note</span><span>The Azure DevOps <em>environment</em> approval is the actual production safety gate here — not a branch policy, not a manual pipeline trigger. Anyone who can merge to <code>main</code> can queue this pipeline; only an approver can let it touch <code>aks-myapp-prod</code>.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="dots"><span></span><span></span><span></span></div><div class="fname">azure-pipelines.yml — deploy stage</div></div>
+        <pre><span class="k">- stage</span>: DeployProd
+  <span class="k">dependsOn</span>: Build
+  <span class="k">jobs</span>:
+  - <span class="k">deployment</span>: ToAks
+    <span class="k">environment</span>: aks-myapp-prod   <span class="c1"># approval gate lives here</span>
+    <span class="k">pool</span>: { <span class="k">vmImage</span>: ubuntu-latest }
+    <span class="k">strategy</span>:
+      <span class="k">runOnce</span>:
+        <span class="k">deploy</span>:
+          <span class="k">steps</span>:
+          - <span class="k">task</span>: AzureCLI@2
+            <span class="k">inputs</span>:
+              <span class="k">azureSubscription</span>: myapp-arm-connection
+              <span class="k">scriptType</span>: bash
+              <span class="k">scriptLocation</span>: inlineScript
+              <span class="k">inlineScript</span>: |
+                az aks get-credentials -g $(resourceGroup) -n $(aksName) --overwrite-existing
+                kubectl set image deployment/api api=$(acrName).azurecr.io/myapp-api:$(Build.BuildId) -n myapp-prod
+                kubectl set image deployment/web web=$(acrName).azurecr.io/myapp-web:$(Build.BuildId) -n myapp-prod
+                kubectl rollout status deployment/api -n myapp-prod --timeout=120s
+                kubectl rollout status deployment/web -n myapp-prod --timeout=120s</pre>
+        <div class="diagram">
+          <div class="diagram-title">end to end</div>
+          <div class="nest">
+            <div class="box-row">
+              <div class="box solid">git push</div><span class="arrow">→</span>
+              <div class="box solid">Build: test + az acr build</div><span class="arrow">→</span>
+              <div class="box solid">approval</div><span class="arrow">→</span>
+              <div class="box accent">kubectl set image + rollout status</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- CHEAT SHEET -->
     <section class="cheat" id="cheatsheet">
       <div class="eyebrow" style="margin-bottom:.6rem"><span class="n">REFERENCE</span> cheat sheet</div>
